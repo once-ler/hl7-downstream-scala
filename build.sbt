@@ -150,10 +150,10 @@ lazy val app = project.
     )
   ).dependsOn(
     common,
-    datasource
+    datasource,
+    http
   )
 
-/*
 lazy val http = project.
   settings(
     name := "http",
@@ -170,7 +170,6 @@ lazy val http = project.
     common,
     datasource
   )
-*/
 
 // Skip tests for assembly  
 lazy val assemblySettings = Seq(
