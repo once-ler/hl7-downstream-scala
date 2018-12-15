@@ -1,0 +1,6 @@
+**/target
+/bin/
+.idea
+**/log
+**/prod.conf
+**/log*
