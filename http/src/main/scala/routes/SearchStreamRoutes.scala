@@ -18,8 +18,13 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
 
 // doobie
-import com.eztier.postgres.eventstore.models.{Patient, CaPatient, Model}
+import com.eztier.postgres.eventstore.models.{Patient, Model}
 import com.eztier.postgres.eventstore.runners.CommandRunner
+
+import com.eztier.hl7mock.types.CaPatient
+
+// Unmarshaller for circe
+import com.eztier.postgres.eventstore.models.CaPatient._
 
 // For testing
 case class Dummy(name: String)

@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.0",
+  version := "0.1.1",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -84,13 +84,13 @@ val akkaSlf4j = akka %% "akka-slf4j" % "2.5.18"
 val akkaStreamTestkit = akka %% "akka-stream-testkit" % "2.5.18" % Test
 
 // HTTP server
-// val akkaHttp = akka %% "akka-http" % akkaHttpV
-// val akkaHttpCore = akka %% "akka-http-core" % akkaHttpV
-// val akkaHttpSprayJson = akka %% "akka-http-spray-json" % akkaHttpV
-// val akkaHttpTestkit = akka %% "akka-http-testkit" % akkaHttpV % Test
+val akkaHttp = akka %% "akka-http" % akkaHttpV
+val akkaHttpCore = akka %% "akka-http-core" % akkaHttpV
+val akkaHttpSprayJson = akka %% "akka-http-spray-json" % akkaHttpV
+val akkaHttpTestkit = akka %% "akka-http-testkit" % akkaHttpV % Test
 
 // akka-http circe
-// val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % "1.22.0"
+val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % "1.22.0"
 
 // Support of CORS requests, version depends on akka-http
 // val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.3.0"
@@ -120,11 +120,12 @@ lazy val datasource = project.
       doobiePostgres,
       doobiePostgresCirce,
       doobieScalaTest,
-      circeGenericExtras
+      circeGenericExtras,
+      cassandraUdt,
+      hl7cassandraAdapter
     )
   ).dependsOn(
-    common,
-    model
+    common
   )
 
 // Custom app
