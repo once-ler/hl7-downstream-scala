@@ -1,5 +1,7 @@
 package com.eztier.postgres.eventstore.implcits
 
+import java.util.Date
+
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 // import akka.event.LoggingAdapter
@@ -12,6 +14,7 @@ import doobie.postgres.implicits._
 import cats.effect.IO
 import scala.concurrent.Future
 
+import com.eztier.cassandra.CaCommon._
 import com.eztier.hl7mock.types.CaPatient
 import com.eztier.postgres.eventstore.models.CaPatient._
 import com.eztier.postgres.eventstore.models._
@@ -27,6 +30,20 @@ trait AdHocable[A] {
 trait Eventable[A] {
   def event(streamUuid: String, streamType: String, eventUuids: List[String], eventTypes: List[String], eventBodies: List[String], schema: String = "hl7")
     (implicit xa: Transactor[IO]): IO[List[AppendEventResult]]
+}
+
+trait Updatable[A] {
+  def update(list: List[A], schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]
+}
+
+/*
+  @params
+    useSchemaTablespace: Boolean
+      true: assumption that a tablespace with schema as its name has already been set up
+      false: will use the default "pg_default" tablespace
+*/
+trait Creatable[A] {
+  def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit xa: Transactor[IO]): IO[Int]
 }
 
 object Searchable {
@@ -71,7 +88,6 @@ object Searchable {
 }
 
 object AdHocable {
-  
   implicit object CaPatientAdhoc extends AdHocable[CaPatient] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[CaPatient]] = {
       
@@ -84,6 +100,7 @@ object AdHocable {
         .transact(xa)
         
     }
+
   }
 
 }
@@ -108,4 +125,49 @@ object Eventable {
       }
   }
   
+}
+
+object Updatable {
+  implicit object CaPatientControlUpdate extends Updatable[CaPatientControl] {
+    override def update(list: List[CaPatientControl], schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[CaPatientControl]] = {
+      /*
+      val sql =
+        sql"""insert into last_model_processed (model, subscriber, start_time) values (?, ?, ?)
+             |on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time""".stripMargin
+      sql.update.withGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")
+        .compile.to[List].transact(xa)
+      */
+
+      val tname = camelToUnderscores(CaPatientControl.getClass.getSimpleName)
+
+      val rows = list.map(a => (a.model, a.subscriber, a.startTime))
+
+      val stmt = s""""insert into model_last_processed (model, subscriber, start_time) values ('$tname', ?, ?)
+      on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time"""
+
+      Update[(String, String, Date)](stmt)
+        .updateManyWithGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")(rows)
+        .compile.to[List].transact(xa)
+    }
+  }
+}
+
+object Creatable {
+  implicit object VersionControlCreate extends Creatable[VersionControl] {
+    override def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit xa: Transactor[IO]): IO[Int] = {
+      val tname = camelToUnderscores(VersionControl.getClass.getSimpleName)
+
+      val tblspc = if (useSchemaTablespace) schema else "pg_default"
+      val pk = primaryKeys.mkString(",")
+      val stmt = s"""create table if not exists $schema.$tname (
+        |model varchar(120),
+        |subscriber varchar(120),
+        |start_time timestamp with time zone,
+        |primary key ($pk)
+        |)
+        |tablespace $tblspc""".stripMargin
+
+      Update(stmt).run().transact(xa)
+    }
+  }
 }

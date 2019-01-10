@@ -8,10 +8,9 @@ import java.util.UUID
 import cats.effect.IO
 
 import scala.reflect.runtime.universe._
-
 import com.eztier.postgres.eventstore.implcits._
 import com.eztier.postgres.eventstore.implcits.Transactors._
-import com.eztier.postgres.eventstore.models.IEvent
+import com.eztier.postgres.eventstore.models.{CaPatientControl, IEvent}
 
 object CommandRunner {
   def tryRunIO[A](io: IO[List[A]]) = {
@@ -23,6 +22,18 @@ object CommandRunner {
         err.printStackTrace(new PrintWriter(sw))
         implicitly[LoggingAdapter].error(sw.toString)   
       throw err
+    }
+  }
+
+  def tryRunIO[A](io: IO[A]) = {
+    try {
+      io.unsafeRunSync()
+    } catch {
+      case err: Exception =>
+        val sw = new StringWriter
+        err.printStackTrace(new PrintWriter(sw))
+        implicitly[LoggingAdapter].error(sw.toString)
+        throw err
     }
   }
 
@@ -44,6 +55,22 @@ object CommandRunner {
     val src = tryRunIO(io)
 
     Source(src)
+  }
+
+  def update[A](list: List[A], schema: String = "hl7")(implicit updatable: Updatable[A]) = {
+    val io = updatable.update(list, schema)
+
+    val src = tryRunIO(io)
+
+    Source(src)
+  }
+
+  def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A]) = {
+    val io = creatable.create(primaryKeys, schema)
+
+    val src = tryRunIO(io)
+
+    Source.single(src)
   }
 
   private def uuidV3(name: String, namespace: String = "ns:URL") = {
