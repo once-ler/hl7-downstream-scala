@@ -3,8 +3,8 @@ package com.eztier.postgres.eventstore.models
 import java.util.Date
 
 trait IControl {
-  def model: String,
-  def subscriber: String,
+  def model: String
+  def subscriber: String
   def startTime: Date
 }
 

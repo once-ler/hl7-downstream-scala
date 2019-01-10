@@ -2,17 +2,19 @@ package com.eztier.postgres.eventstore.implcits
 
 import java.util.Date
 
-import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
+// import akka.actor.ActorSystem
+// import akka.stream.ActorMaterializer
 // import akka.event.LoggingAdapter
 import doobie._
 import doobie.implicits._
 
-import doobie.postgres._
+// import doobie.postgres._
 import doobie.postgres.implicits._
 
+import cats.implicits._ // Required for Foldable[F] for VersionControlRow type
 import cats.effect.IO
-import scala.concurrent.Future
+// import scala.concurrent.Future
+import scala.reflect.runtime.universe._
 
 import com.eztier.cassandra.CaCommon._
 import com.eztier.hl7mock.types.CaPatient
@@ -33,7 +35,8 @@ trait Eventable[A] {
 }
 
 trait Updatable[A] {
-  def update(list: List[A], schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]
+  def update(list: A, schema: String = "hl7")(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[Int]
+  // def update(list: List[A], schema: String = "hl7")(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[List[A]]
 }
 
 /*
@@ -43,7 +46,7 @@ trait Updatable[A] {
       false: will use the default "pg_default" tablespace
 */
 trait Creatable[A] {
-  def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit xa: Transactor[IO]): IO[Int]
+  def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[Int]
 }
 
 object Searchable {
@@ -128,46 +131,63 @@ object Eventable {
 }
 
 object Updatable {
-  implicit object CaPatientControlUpdate extends Updatable[CaPatientControl] {
-    override def update(list: List[CaPatientControl], schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[CaPatientControl]] = {
-      /*
-      val sql =
-        sql"""insert into last_model_processed (model, subscriber, start_time) values (?, ?, ?)
-             |on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time""".stripMargin
-      sql.update.withGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")
-        .compile.to[List].transact(xa)
-      */
+  implicit object VersionControlUpdate extends Updatable[VersionControl] {
+    override def update(a: VersionControl, schema: String = "hl7")
+    (implicit xa: Transactor[IO], typeTag: TypeTag[VersionControl]): IO[Int] = {
 
-      val tname = camelToUnderscores(CaPatientControl.getClass.getSimpleName)
+      type VersionControlRow = (String, String, Date)
 
-      val rows = list.map(a => (a.model, a.subscriber, a.startTime))
+      val row = (a.model, a.subscriber, a.startTime)
+      val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
 
-      val stmt = s""""insert into model_last_processed (model, subscriber, start_time) values ('$tname', ?, ?)
+      val stmt = s"""insert into $schema.$tname (model, subscriber, start_time) values (?, ?, ?)
       on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time"""
 
-      Update[(String, String, Date)](stmt)
-        .updateManyWithGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")(rows)
-        .compile.to[List].transact(xa)
+      Update[VersionControlRow](stmt)
+        .toUpdate0(row)
+        .run
+        .transact(xa)
+
     }
   }
+/**
+  implicit object CaPatientControlUpdate extends Updatable[CaPatientControl] {
+    override def update(list: List[CaPatientControl], schema: String = "hl7")
+    (implicit xa: Transactor[IO], typeTag: TypeTag[CaPatientControl]): IO[List[CaPatientControl]] = {
+
+      type VersionControlRow = (String, String, Date)
+
+      val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
+
+      val rows = list.map(a => (tname, a.subscriber, a.startTime))
+
+      val stmt = s"""insert into $schema.model_last_execution (model, subscriber, start_time) values (?, ?, ?)
+      on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time"""
+
+      Update[VersionControlRow](stmt)
+        .updateManyWithGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")(rows)
+        .compile.toList.transact(xa)
+
+    }
+  }
+**/
 }
 
 object Creatable {
   implicit object VersionControlCreate extends Creatable[VersionControl] {
-    override def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit xa: Transactor[IO]): IO[Int] = {
-      val tname = camelToUnderscores(VersionControl.getClass.getSimpleName)
+    override def create(primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)
+    (implicit xa: Transactor[IO], typeTag: TypeTag[VersionControl]): IO[Int] = {
+      val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
 
       val tblspc = if (useSchemaTablespace) schema else "pg_default"
       val pk = primaryKeys.mkString(",")
-      val stmt = s"""create table if not exists $schema.$tname (
+      val stmt = fr"create table if not exists " ++ Fragment(s"$schema.$tname", None) ++ fr""" (
         |model varchar(120),
         |subscriber varchar(120),
         |start_time timestamp with time zone,
-        |primary key ($pk)
-        |)
-        |tablespace $tblspc""".stripMargin
+        |primary key (""".stripMargin ++ Fragment(pk, None) ++ fr") ) tablespace " ++ Fragment(tblspc, None)
 
-      Update(stmt).run().transact(xa)
+      stmt.update.run.transact(xa)
     }
   }
 }

@@ -5,7 +5,7 @@ import java.text.SimpleDateFormat
 import doobie._
 import io.circe.{Encoder, Decoder}
 import io.circe.generic.extras.Configuration
-import io.circe.generic.extras.auto._
+import io.circe.generic.extras.auto._ // Required for io.circe.generic.extras.decoding.ConfiguredDecoder
 import io.circe.generic.extras.semiauto.{ deriveDecoder, deriveEncoder }
 import io.circe.syntax._
 

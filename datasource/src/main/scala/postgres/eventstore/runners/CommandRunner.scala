@@ -57,15 +57,23 @@ object CommandRunner {
     Source(src)
   }
 
-  def update[A](list: List[A], schema: String = "hl7")(implicit updatable: Updatable[A]) = {
+  def update[A](a: A, schema: String = "hl7")(implicit updatable: Updatable[A], typeTag: TypeTag[A]) = {
+    val io = updatable.update(a, schema)
+
+    val src = tryRunIO(io)
+
+    Source.single(src)
+  }
+/**
+  def update[A](list: List[A], schema: String = "hl7")(implicit updatable: Updatable[A], typeTag: TypeTag[A]) = {
     val io = updatable.update(list, schema)
 
     val src = tryRunIO(io)
 
     Source(src)
   }
-
-  def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A]) = {
+**/
+  def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A], typeTag: TypeTag[A]) = {
     val io = creatable.create(primaryKeys, schema)
 
     val src = tryRunIO(io)
