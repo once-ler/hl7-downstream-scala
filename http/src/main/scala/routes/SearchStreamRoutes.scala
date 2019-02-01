@@ -60,6 +60,11 @@ trait SearchStreamRoutes {
   */
   def streamingJsonRoute =
     path("streaming-json") {
+      val newline = ByteString("\n")
+
+      implicit val jsonStreamingSupport = EntityStreamingSupport.json()
+        .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
+
       get {
         val sourceOfNumbers = Source(1 to 15)
         val sourceOfSearchMessages =
