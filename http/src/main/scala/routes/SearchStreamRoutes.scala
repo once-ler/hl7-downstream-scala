@@ -4,6 +4,9 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.HttpEntity
+// import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.server.Directives._
+// import ContentTypeResolver.Default
 import akka.util.ByteString
 
 // akka execution context
@@ -13,7 +16,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 // akka-http-circe
-import akka.http.scaladsl.server.Directives._
 import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
 
@@ -100,5 +102,5 @@ trait SearchStreamRoutes {
     }
 
   }
-
+  
 }

@@ -5,13 +5,20 @@ import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
 import com.eztier.rest.routes.SearchStreamRoutes
+import com.eztier.rest.routes.StaticRoutes
 
-object Boot extends App with SearchStreamRoutes {
+object Boot extends App with SearchStreamRoutes with StaticRoutes {
   implicit val actorSystem = ActorSystem(name = "http-actor-system")
   implicit val streamMaterializer = ActorMaterializer()
   implicit val executionContext = actorSystem.dispatcher
   implicit val logger = actorSystem.log
-  val allRoutes = httpStreamingRoutes ~ httpInfoStreamingRoutes ~ httpStreamingSearchRoutes
+  val allRoutes = 
+    httpStreamingRoutes ~ 
+      httpInfoStreamingRoutes ~ 
+        httpStreamingSearchRoutes ~ 
+          httpStaticRoutes ~
+            httpPublicRoutes ~
+              httpApiRoutes
 
   val bindingFuture = Http().bindAndHandle(allRoutes, "localhost", 9000)
   bindingFuture
