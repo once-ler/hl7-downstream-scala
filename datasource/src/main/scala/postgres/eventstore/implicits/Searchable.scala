@@ -1,4 +1,4 @@
-package com.eztier.postgres.eventstore.implcits
+package com.eztier.datasource.postgres.eventstore.implcits
 
 import java.util.Date
 
@@ -18,8 +18,9 @@ import scala.reflect.runtime.universe._
 
 import com.eztier.cassandra.CaCommon._
 import com.eztier.hl7mock.types.CaPatient
-import com.eztier.postgres.eventstore.models.CaPatient._
-import com.eztier.postgres.eventstore.models._
+import com.eztier.datasource.postgres.eventstore.models.CaPatient._
+import com.eztier.datasource.postgres.eventstore.models._
+import com.eztier.datasource.common.models.{Patient, Model}
 
 trait Searchable[A] {
   def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]

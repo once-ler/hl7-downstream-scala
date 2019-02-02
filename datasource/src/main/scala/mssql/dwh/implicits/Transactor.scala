@@ -1,4 +1,4 @@
-package com.eztier.datasource.postgres.eventstore.implcits
+package com.eztier.datasource.mssql.dwh.implcits
 
 import doobie._
 import doobie.implicits._
@@ -12,10 +12,10 @@ object Transactors {
   import com.typesafe.config.ConfigFactory
   val conf = ConfigFactory.load()
 
-  val url = conf.getString(s"$env.doobie.postgres.patient.url")
-  val driver = conf.getString(s"$env.doobie.postgres.patient.driver")
-  val user = conf.getString(s"$env.doobie.postgres.patient.user")
-  val pass = conf.getString(s"$env.doobie.postgres.patient.password")
+  val url = conf.getString(s"$env.doobie.mssql.execution_log.url")
+  val driver = conf.getString(s"$env.doobie.mssql.execution_log.driver")
+  val user = conf.getString(s"$env.doobie.mssql.execution_log.user")
+  val pass = conf.getString(s"$env.doobie.mssql.execution_log.password")
 
   implicit val cs = IO.contextShift(ec)
 

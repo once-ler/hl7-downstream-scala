@@ -6,8 +6,8 @@ import org.scalatest.{BeforeAndAfter, Failed, FunSpec, Matchers}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import com.eztier.postgres.eventstore.runners.CommandRunner
-import com.eztier.postgres.eventstore.models._
+import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
+import com.eztier.datasource.postgres.eventstore.models._
 import com.eztier.hl7mock.types.CaPatient
 
 import scala.concurrent.Await

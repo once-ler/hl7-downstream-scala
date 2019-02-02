@@ -1,4 +1,4 @@
-package com.eztier.postgres.eventstore.models
+package com.eztier.datasource.postgres.eventstore.models
 
 import java.util.Date
 import java.text.SimpleDateFormat

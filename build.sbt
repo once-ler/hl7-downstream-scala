@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.4",
+  version := "0.1.5",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,

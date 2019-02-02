@@ -1,4 +1,4 @@
-package com.eztier.postgres.eventstore.models
+package com.eztier.datasource.postgres.eventstore.models
 
 trait IEvent {
   def eventType: String
@@ -7,4 +7,4 @@ trait IEvent {
 
 case class GenericEvent(eventType: String, data: String) extends IEvent
 
-case class AppendEventResult(result: List[Option[Int]])
+case class AppendEventResult(result: List[Option[Long]])

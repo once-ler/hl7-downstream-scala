@@ -1,4 +1,4 @@
-package com.eztier.postgres.eventstore.runners
+package com.eztier.datasource.postgres.eventstore.runners
 
 import akka.stream.scaladsl.Source
 import akka.event.LoggingAdapter
@@ -8,11 +8,15 @@ import java.util.UUID
 import cats.effect.IO
 
 import scala.reflect.runtime.universe._
-import com.eztier.postgres.eventstore.implcits._
-import com.eztier.postgres.eventstore.implcits.Transactors._
-import com.eztier.postgres.eventstore.models.{CaPatientControl, IEvent}
+import com.eztier.datasource.postgres.eventstore.implcits._
+import com.eztier.datasource.postgres.eventstore.implcits.Transactors._
+import com.eztier.datasource.postgres.eventstore.models.{CaPatientControl, IEvent}
+
+import com.eztier.datasource.common.runners.CommandRunner._
 
 object CommandRunner {
+  
+  /*
   def tryRunIO[A](io: IO[List[A]]) = {
     try {
       io.unsafeRunSync()
@@ -36,6 +40,9 @@ object CommandRunner {
         throw err
     }
   }
+  */
+
+  // These type classes depend on an implicit instance of Transactor
 
   def search[A](term: String, schema: String = "hl7")(implicit searchable: Searchable[A], typeTag: TypeTag[A]): Source[A, akka.NotUsed] = {
     val t = schema + "." + typeTag.tpe.typeSymbol.name.toString.toLowerCase
@@ -64,15 +71,7 @@ object CommandRunner {
 
     Source.single(src)
   }
-/**
-  def update[A](list: List[A], schema: String = "hl7")(implicit updatable: Updatable[A], typeTag: TypeTag[A]) = {
-    val io = updatable.update(list, schema)
 
-    val src = tryRunIO(io)
-
-    Source(src)
-  }
-**/
   def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A], typeTag: TypeTag[A]) = {
     val io = creatable.create(primaryKeys, schema)
 
