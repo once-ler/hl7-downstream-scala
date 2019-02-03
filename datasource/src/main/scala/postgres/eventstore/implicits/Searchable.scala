@@ -1,10 +1,6 @@
 package com.eztier.datasource.postgres.eventstore.implcits
 
 import java.util.Date
-
-// import akka.actor.ActorSystem
-// import akka.stream.ActorMaterializer
-// import akka.event.LoggingAdapter
 import doobie._
 import doobie.implicits._
 
@@ -13,7 +9,6 @@ import doobie.postgres.implicits._
 
 import cats.implicits._ // Required for Foldable[F] for VersionControlRow type
 import cats.effect.IO
-// import scala.concurrent.Future
 import scala.reflect.runtime.universe._
 
 import com.eztier.cassandra.CaCommon._

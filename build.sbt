@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.5",
+  version := "0.1.6",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -73,7 +73,7 @@ val scalikeConfig = "org.scalikejdbc" %% "scalikejdbc-config"  % "3.2.2"
 val scalikeMacro = "org.scalikejdbc" %% "scalikejdbc-syntax-support-macro" % "3.2.2"
 
 // sqljdbc
-val sqljdbc = "com.microsoft.sqlserver" % "mssql-jdbc" % "7.1.2.jre8-preview"
+val sqljdbc = "com.microsoft.sqlserver" % "mssql-jdbc" % "7.2.0.jre8"
 
 // akka
 val akka = "com.typesafe.akka"
@@ -122,7 +122,8 @@ lazy val datasource = project.
       doobieScalaTest,
       circeGenericExtras,
       cassandraUdt,
-      hl7cassandraAdapter
+      hl7cassandraAdapter,
+      sqljdbc
     )
   ).dependsOn(
     common

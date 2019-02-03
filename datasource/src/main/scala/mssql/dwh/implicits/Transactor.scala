@@ -1,4 +1,4 @@
-package com.eztier.datasource.mssql.dwh.implcits
+package com.eztier.datasource.mssql.dwh.implicits
 
 import doobie._
 import doobie.implicits._

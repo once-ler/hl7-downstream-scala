@@ -1,0 +1,25 @@
+package com.eztier.datasource.mssql.dwh.runners
+
+import akka.stream.scaladsl.Source
+
+import cats.effect.IO
+import org.joda.time.DateTime
+import scala.reflect.runtime.universe._
+
+import com.eztier.datasource.mssql.dwh.implicits._
+import com.eztier.datasource.mssql.dwh.implicits.Transactors._
+import com.eztier.datasource.mssql.dwh.models.{ExecutionLog}
+
+import com.eztier.datasource.common.runners.CommandRunner._
+
+object CommandRunner {
+  def search[A](toStore: String, fromDateTime: DateTime, toDateTime: DateTime, schema: String = "ril")
+    (implicit searchable: Searchable[A], typeTag: TypeTag[A]): Source[A, akka.NotUsed] = {
+  
+    val io = searchable.search(toStore, fromDateTime, toDateTime, schema)
+
+    val src = tryRunIO(io)
+
+    Source(src)
+  }
+}
