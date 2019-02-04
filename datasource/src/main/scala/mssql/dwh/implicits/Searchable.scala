@@ -20,7 +20,17 @@ trait AdHocable[A] {
 object Searchable {
   implicit object ExecutionLogSearch extends Searchable[ExecutionLog] {
     override def search(toStore: String, fromDateTime: DateTime, toDateTime: DateTime, schema: String = "ril")(implicit xa: Transactor[IO]): IO[List[ExecutionLog]] = {
-      val stmt = fr"select start_time StartTime from " ++ 
+      val stmt = fr"""select 
+        start_time StartTime, 
+        from_store FromStore,
+        to_store ToStore,
+        study_id StudyId,
+        wsi WSI,
+        caller Caller,
+        request Request,
+        response Response,
+        error Error
+        from """ ++ 
         Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
         Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
         Fragment(s"'${fromDateTime.toLocalDateTime.toString()}'", None) ++ fr" and start_time <= " ++
