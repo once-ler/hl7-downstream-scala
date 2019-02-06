@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.7",
+  version := "0.1.8",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -106,6 +106,7 @@ val doobieScalaTest = "org.tpolecat" %% "doobie-scalatest" % "0.6.0" % "test"  /
 
 // circe
 val circeGenericExtras = "io.circe" %% "circe-generic-extras" % "0.10.0"
+val circeJava8 = "io.circe" %% "circe-java8" % "0.11.1"
 
 // Cassandra
 val cassandraUdt = "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.19"
@@ -121,6 +122,7 @@ lazy val datasource = project.
       doobiePostgresCirce,
       doobieScalaTest,
       circeGenericExtras,
+      circeJava8,
       cassandraUdt,
       hl7cassandraAdapter,
       sqljdbc

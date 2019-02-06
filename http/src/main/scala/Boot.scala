@@ -16,9 +16,10 @@ object Boot extends App with SearchStreamRoutes with StaticRoutes {
     httpStreamingRoutes ~ 
       httpInfoStreamingRoutes ~ 
         httpStreamingSearchRoutes ~ 
-          httpStaticRoutes ~
-            httpPublicRoutes ~
-              httpApiRoutes
+          httpStreamingSearchLogRoutes
+            httpStaticRoutes ~
+              httpPublicRoutes ~
+                httpApiRoutes
 
   val bindingFuture = Http().bindAndHandle(allRoutes, "localhost", 9000)
   bindingFuture

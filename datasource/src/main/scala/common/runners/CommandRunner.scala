@@ -6,6 +6,8 @@ import akka.event.LoggingAdapter
 import scala.reflect.runtime.universe._
 
 import cats.effect.IO
+import doobie._
+import doobie.implicits._
 
 import com.eztier.datasource.common.implicits.ExecutionContext._
 
@@ -34,5 +36,19 @@ object CommandRunner {
         throw err
     }
   }
+
+  
+  def adhoc[A](q0: Query0[A])(implicit xa: Transactor[IO]) : Source[A, akka.NotUsed] = {
+    val io = q0
+      .stream
+      .compile
+      .to[List]
+      .transact(xa)
+
+    val src = tryRunIO(io)
+
+    Source(src)
+  }
+
 
 }

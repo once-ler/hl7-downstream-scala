@@ -6,9 +6,28 @@ import org.scalatest.{BeforeAndAfter, Failed, FunSpec, Matchers}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
+
+import com.eztier.datasource.common.runners.{CommandRunner => CommandRunnerCommon}
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 import com.eztier.datasource.postgres.eventstore.models._
 import com.eztier.hl7mock.types.CaPatient
+
+// For yolo xa
+// import org.joda.time.DateTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter.{
+  ISO_LOCAL_DATE,
+  ISO_LOCAL_DATE_TIME,
+  ISO_LOCAL_TIME,
+  ISO_OFFSET_DATE_TIME,
+  ISO_OFFSET_TIME,
+  ISO_ZONED_DATE_TIME
+}
+import java.sql.Timestamp
+import cats.effect.IO
+import doobie._
+import doobie.implicits._
+import com.eztier.datasource.postgres.eventstore.implicits.Transactors._
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -21,6 +40,93 @@ class TestDoobieSpec extends FunSpec with Matchers {
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
+  it("Construct valid SQL statement") {
+      
+    val schema = "ril"
+    val toStore = "store_def"
+    // val fromDateTime: DateTime = new DateTime("2019-01-31T12:43:03.141Z")
+    // val toDateTime: DateTime = new DateTime()
+    val fromDateTime: LocalDateTime = LocalDateTime.parse("2019-01-31T12:43:03.141", ISO_LOCAL_DATE_TIME)
+    val toDateTime: LocalDateTime = LocalDateTime.now()
+
+    val stmt = fr"""select 
+      start_time StartTime, 
+      from_store FromStore,
+      to_store ToStore,
+      study_id StudyId,
+      wsi WSI,
+      caller Caller,
+      request Request,
+      response Response,
+      error Error
+      from """ ++ 
+      Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
+      Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
+      Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
+      Fragment(s"'${toDateTime.toString()}'", None)
+
+      // Testing
+      val y = xa.yolo
+      import y._
+      
+      stmt
+        .query[ExecutionLog]
+        .quick
+        .unsafeRunSync
+
+      sql"""select 
+      start_time StartTime, 
+      from_store FromStore, 
+      to_store ToStore, 
+      study_id StudyId, 
+      wsi WSI, caller Caller, 
+      response Response 
+      from ril.wsi_execution_hist limit(20)"""
+        .query[ExecutionLogMini]
+        .quick
+        .unsafeRunSync
+
+      sql"select start_time, Response from ril.wsi_execution_hist"
+        .query[(Timestamp, String)]
+        .stream
+        .take(5)
+        .quick
+        .unsafeRunSync
+      // Fin Testing
+  }
+
+  it("Can select multi columns into a list of tuples") {
+    val q0 = sql"""select 
+      start_time StartTime, 
+      from_store FromStore, 
+      to_store ToStore, 
+      study_id StudyId, 
+      wsi WSI, caller Caller, 
+      response Response 
+      from ril.wsi_execution_hist limit(20)"""
+      .query[(Timestamp, String, String, String, String, String, String)]
+
+    val g = CommandRunnerCommon.adhoc(q0)
+      .runWith(Sink.seq)
+
+    val r1 = Await.result(g, 500 millis)
+
+    r1.foreach(println(_))
+  }
+
+/*
+  // Adhocable[ExecutionLog]
+  val g = CommandRunner.adhoc[ExecutionLog](s"""select 
+    start_time StartTime, from_store FromStore, to_store ToStore, study_id StudyId, wsi WSI, caller Caller, response Response 
+    from ril.wsi_execution_hist limit(20)""")
+    .runWith(Sink.seq)
+
+  val r1 = Await.result(g, 500 millis)
+
+  r1.foreach(println(_))
+*/
+
+/*
   // Updatable[A]
   val c = VersionControl("ca_patient", "test-doobie", new Date())
   val h1 = CommandRunner.update(c)
@@ -38,8 +144,6 @@ class TestDoobieSpec extends FunSpec with Matchers {
 
   println(r3)
 
-
-/*
   // Eventable[A]
   val ev = GenericEvent("test::generic::event", s"""{"id":"foo"}""")
   val h = CommandRunner.addEvent(List(ev))

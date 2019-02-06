@@ -1,7 +1,17 @@
 package com.eztier.test
 
 import java.util.Date
-import org.joda.time.DateTime
+// import org.joda.time.DateTime
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter.{
+  ISO_LOCAL_DATE,
+  ISO_LOCAL_DATE_TIME,
+  ISO_LOCAL_TIME,
+  ISO_OFFSET_DATE_TIME,
+  ISO_OFFSET_TIME,
+  ISO_ZONED_DATE_TIME
+}
+
 import org.scalatest.{BeforeAndAfter, Failed, FunSpec, Matchers}
 import akka.actor.ActorSystem
 import akka.stream.{ActorMaterializer, ThrottleMode}
@@ -28,8 +38,10 @@ class TestDoobieMSSQLSpec extends FunSpec with Matchers {
 
     val schema = "ril"
     val toStore = "store_def"
-    val fromDateTime: DateTime = new DateTime("2019-01-31T12:43:03.141Z")
-    val toDateTime: DateTime = new DateTime("2019-02-03T18:58:50.141Z")
+    // val fromDateTime: DateTime = new DateTime("2019-01-31T12:43:03.141Z")
+    // val toDateTime: DateTime = new DateTime("2019-02-03T18:58:50.141Z")
+    val fromDateTime: LocalDateTime = LocalDateTime.parse("2019-01-31T12:43:03.141", ISO_LOCAL_DATE_TIME)
+    val toDateTime: LocalDateTime = LocalDateTime.parse("2019-02-03T18:58:50.141", ISO_LOCAL_DATE_TIME)
 
     it("Search using command runner") {
       val resp = CommandRunner
@@ -58,8 +70,8 @@ class TestDoobieMSSQLSpec extends FunSpec with Matchers {
         from """ ++ 
         Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
         Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
-        Fragment(s"'${fromDateTime.toLocalDateTime.toString()}'", None) ++ fr" and start_time <= " ++
-        Fragment(s"'${toDateTime.toLocalDateTime.toString()}'", None)
+        Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
+        Fragment(s"'${toDateTime.toString()}'", None)
 
       // Testing
       // val xa = implicitly[Transactor[IO]]

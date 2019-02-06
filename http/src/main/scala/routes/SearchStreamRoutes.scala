@@ -20,13 +20,15 @@ import de.heikoseeberger.akkahttpcirce.FailFastCirceSupport._
 import io.circe.generic.auto._
 
 // doobie
-import com.eztier.datasource.postgres.eventstore.models.{Patient, Model}
+import com.eztier.datasource.common.models.{Patient, Model, ExecutionLogRange}
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 
+// Marshalled types
 import com.eztier.hl7mock.types.CaPatient
+import com.eztier.datasource.postgres.eventstore.models.ExecutionLogMini
 
 // Unmarshaller for circe
-import com.eztier.postgres.eventstore.models.CaPatient._
+import com.eztier.datasource.postgres.eventstore.models.CaPatient._
 
 // For testing
 case class Dummy(name: String)
@@ -39,9 +41,10 @@ trait SearchStreamRoutes {
   lazy val httpStreamingRoutes = streamingJsonRoute
   lazy val httpInfoStreamingRoutes = streamingInfoRoute
   lazy val httpStreamingSearchRoutes = streamingSearchRoute
+  lazy val httpStreamingSearchLogRoutes = streamingSearchLogRoute
 
   implicit val jsonStreamingSupport: akka.http.scaladsl.common.JsonEntityStreamingSupport = EntityStreamingSupport.json()
-  
+
   def streamingInfoRoute =
     path("info") {
       get {
@@ -94,6 +97,25 @@ trait SearchStreamRoutes {
         entity(as[Patient]) { p =>
           val resp = CommandRunner
             .search[CaPatient](p.name)
+            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            
+          complete(resp)
+        }
+      }
+    }
+
+  }
+
+  /*
+    @test
+      curl -XPOST -H 'Content-Type:application/json'  -d '{"toStore": "abc", "fromDateTime": "2019-01-31T12:43:03.141", "toDateTime": "2019-02-03T18:58:50.141"}' localhost:9000/search/log
+  */
+  def streamingSearchLogRoute = {
+    path("search/log") {
+      post {
+        entity(as[ExecutionLogRange]) { p =>
+          val resp = CommandRunner
+            .searchLog[ExecutionLogMini](p.toStore, p.fromDateTime, p.toDateTime)
             .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
             
           complete(resp)

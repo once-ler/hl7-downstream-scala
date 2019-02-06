@@ -1,15 +1,17 @@
-package com.eztier.datasource.postgres.eventstore.implcits
+package com.eztier.datasource.postgres.eventstore.implicits
 
 import java.util.Date
+import scala.reflect.runtime.universe._
+// import org.joda.time.DateTime
+import java.time.LocalDateTime
+
 import doobie._
 import doobie.implicits._
-
 // import doobie.postgres._
 import doobie.postgres.implicits._
 
 import cats.implicits._ // Required for Foldable[F] for VersionControlRow type
 import cats.effect.IO
-import scala.reflect.runtime.universe._
 
 import com.eztier.cassandra.CaCommon._
 import com.eztier.hl7mock.types.CaPatient
@@ -19,6 +21,10 @@ import com.eztier.datasource.common.models.{Patient, Model}
 
 trait Searchable[A] {
   def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]
+}
+
+trait SearchableLog[A] {
+  def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit xa: Transactor[IO]): IO[List[A]]
 }
 
 trait AdHocable[A] {
@@ -83,7 +89,32 @@ object Searchable {
         .transact(xa)
     }
   }
+}
 
+object SearchableLog {
+  implicit object ExecutionLogMiniSearch extends SearchableLog[ExecutionLogMini] {
+    override def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit xa: Transactor[IO]): IO[List[ExecutionLogMini]] = {
+      
+      val stmt = fr"""select start_time StartTime, 
+        from_store FromStore, 
+        to_store ToStore, 
+        study_id StudyId, 
+        wsi WSI, caller Caller, 
+        response Response 
+        from """ ++ 
+        Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
+        Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
+        Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
+        Fragment(s"'${toDateTime.toString()}'", None)
+      
+      stmt
+        .query[ExecutionLogMini]
+        .stream
+        .compile
+        .to[List]
+        .transact(xa)
+    }
+  }
 }
 
 object AdHocable {
@@ -99,7 +130,32 @@ object AdHocable {
         .transact(xa)
         
     }
+  }
 
+  implicit object ExecutionLogAdhoc extends AdHocable[ExecutionLog] {
+    override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionLog]] = {
+      
+      val stmt = Fragment(sqlstring, None)
+      stmt
+        .query[ExecutionLog]
+        .stream
+        .compile
+        .to[List]
+        .transact(xa)        
+    }
+  }
+
+  implicit object ExecutionLogMiniAdhoc extends AdHocable[ExecutionLogMini] {
+    override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionLogMini]] = {
+      
+      val stmt = Fragment(sqlstring, None)
+      stmt
+        .query[ExecutionLogMini]
+        .stream
+        .compile
+        .to[List]
+        .transact(xa)        
+    }
   }
 
 }

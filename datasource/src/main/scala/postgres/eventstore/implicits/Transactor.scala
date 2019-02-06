@@ -1,4 +1,4 @@
-package com.eztier.datasource.postgres.eventstore.implcits
+package com.eztier.datasource.postgres.eventstore.implicits
 
 import doobie._
 import doobie.implicits._

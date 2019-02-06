@@ -1,53 +1,32 @@
 package com.eztier.datasource.postgres.eventstore.runners
 
 import akka.stream.scaladsl.Source
-import akka.event.LoggingAdapter
-import java.io.{PrintWriter, StringWriter}
 import java.util.UUID
-
-import cats.effect.IO
+// import org.joda.time.DateTime
+import java.time.LocalDateTime
 
 import scala.reflect.runtime.universe._
-import com.eztier.datasource.postgres.eventstore.implcits._
-import com.eztier.datasource.postgres.eventstore.implcits.Transactors._
+import com.eztier.datasource.postgres.eventstore.implicits._
+import com.eztier.datasource.postgres.eventstore.implicits.Transactors._
 import com.eztier.datasource.postgres.eventstore.models.{CaPatientControl, IEvent}
 
 import com.eztier.datasource.common.runners.CommandRunner._
 
 object CommandRunner {
-  
-  /*
-  def tryRunIO[A](io: IO[List[A]]) = {
-    try {
-      io.unsafeRunSync()
-    } catch {
-      case err: Exception =>
-        val sw = new StringWriter
-        err.printStackTrace(new PrintWriter(sw))
-        implicitly[LoggingAdapter].error(sw.toString)   
-      throw err
-    }
-  }
-
-  def tryRunIO[A](io: IO[A]) = {
-    try {
-      io.unsafeRunSync()
-    } catch {
-      case err: Exception =>
-        val sw = new StringWriter
-        err.printStackTrace(new PrintWriter(sw))
-        implicitly[LoggingAdapter].error(sw.toString)
-        throw err
-    }
-  }
-  */
-
   // These type classes depend on an implicit instance of Transactor
 
   def search[A](term: String, schema: String = "hl7")(implicit searchable: Searchable[A], typeTag: TypeTag[A]): Source[A, akka.NotUsed] = {
     val t = schema + "." + typeTag.tpe.typeSymbol.name.toString.toLowerCase
 
     val io = searchable.search(term)
+
+    val src = tryRunIO(io)
+
+    Source(src)
+  }
+
+  def searchLog[A](toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit searchable: SearchableLog[A], typeTag: TypeTag[A]): Source[A, akka.NotUsed] = {
+    val io = searchable.search(toStore, fromDateTime, toDateTime, schema)
 
     val src = tryRunIO(io)
 
