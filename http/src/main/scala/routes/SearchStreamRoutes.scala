@@ -126,7 +126,10 @@ trait SearchStreamRoutes {
             format match {
               case Some(a) if a == "html" =>
                 
-                val html = resp.zipWithIndex.map{ (a, i) =>
+                val html = resp.zipWithIndex.map{ t =>
+                  val a = t._1
+                  val i = t._2
+                  
                   ByteString(s"""<tr>
                   |<td style="width: 60px;">${i.toString()}</td>
                   |<td style="width: 160px;">${a.StartTime.toString()}</td>
