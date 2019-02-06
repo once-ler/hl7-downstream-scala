@@ -19,6 +19,9 @@ import com.eztier.datasource.postgres.eventstore.models.CaPatient._
 import com.eztier.datasource.postgres.eventstore.models._
 import com.eztier.datasource.common.models.{Patient, Model}
 
+// Required for implicitly converting java.sql.Timestamp -> java.time.LocalDateTime
+import com.eztier.datasource.postgres.eventstore.models.ExecutionLogImplicits._
+
 trait Searchable[A] {
   def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]
 }

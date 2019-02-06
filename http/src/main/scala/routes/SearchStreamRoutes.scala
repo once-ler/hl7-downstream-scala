@@ -108,21 +108,55 @@ trait SearchStreamRoutes {
 
   /*
     @test
-      curl -XPOST -H 'Content-Type:application/json'  -d '{"toStore": "abc", "fromDateTime": "2019-01-31T12:43:03.141", "toDateTime": "2019-02-03T18:58:50.141"}' localhost:9000/search/log
+    curl -XPOST -H 'Content-Type:application/json'  -d '{"toStore": "store_def", "fromDateTime": "2019-01-31T12:43:03.141", "toDateTime": "2019-02-06T18:58:50.141"}' localhost:9000/log/wsi?stream=1
+    curl -XPOST -H 'Content-Type:application/json'  -d '{"toStore": "store_def", "fromDateTime": "2019-01-31T12:43:03.141", "toDateTime": "2019-02-06T18:58:50.141"}' localhost:9000/log/wsi?format=html
+  
   */
   def streamingSearchLogRoute = {
-    path("search/log") {
+
+    path("log" / "wsi") {
       post {
         entity(as[ExecutionLogRange]) { p =>
+          
           val resp = CommandRunner
             .searchLog[ExecutionLogMini](p.toStore, p.fromDateTime, p.toDateTime)
             .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
-            
-          complete(resp)
+          
+          parameters('stream.?, 'format.?) { (stream, format) =>
+            format match {
+              case Some(a) if a == "html" =>
+                
+                val html = resp.map{ a =>
+                  ByteString(s"""<tr>
+                  |<td>${a.StartTime.toString()}</td>
+                  |<td>${a.FromStore}</td>
+                  |<td>${a.ToStore}</td>
+                  |<td>${a.StudyId}</td>
+                  |<td>${a.WSI}</td>
+                  |<td>${a.Caller}</td>
+                  |<td>${a.Response}</td>
+                  |</tr>""".stripMargin.replaceAll("\n", "") + "\n")
+                }
+
+                complete(HttpEntity(`text/csv(UTF-8)`, html))
+              case _ =>
+                stream match {
+                  case Some(a) =>
+                    if (a == "1") {
+                      val newline = ByteString("\n")
+                      implicit val jsonStreamingSupport = EntityStreamingSupport.json()
+                        .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
+
+                      complete(resp)
+                    } else complete(resp)
+                  case _ => complete(resp)
+                }
+            }
+          }
         }
+
       }
     }
-
   }
-  
+
 }

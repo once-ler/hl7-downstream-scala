@@ -12,6 +12,9 @@ import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 import com.eztier.datasource.postgres.eventstore.models._
 import com.eztier.hl7mock.types.CaPatient
 
+// Required for implicitly converting java.sql.Timestamp -> java.time.LocalDateTime
+import com.eztier.datasource.postgres.eventstore.models.ExecutionLogImplicits._
+
 // For yolo xa
 // import org.joda.time.DateTime
 import java.time.LocalDateTime
@@ -69,6 +72,11 @@ class TestDoobieSpec extends FunSpec with Matchers {
       val y = xa.yolo
       import y._
       
+      stmt
+        .query[ExecutionLog]
+        .check
+        .unsafeRunSync
+
       stmt
         .query[ExecutionLog]
         .quick

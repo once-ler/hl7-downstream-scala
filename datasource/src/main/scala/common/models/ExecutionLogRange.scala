@@ -4,13 +4,10 @@ package com.eztier.datasource.common.models
 import java.time.LocalDateTime
 
 // circe unmarshalling DateTime support
-// import io.circe.{Encoder, Decoder}
 import io.circe.generic.semiauto._
 import io.circe.java8.time._
 
-case class ExecutionLogRange(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime) {
-  
-}
+case class ExecutionLogRange(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime)
 
 object ExecutionLogRange {
   /*
