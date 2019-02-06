@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.9",
+  version := "0.1.10",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -163,6 +163,13 @@ lazy val http = project.
     name := "http",
     settings,
     assemblySettings,
+    Seq(
+      javaOptions ++= Seq(
+        // "-Dlogback.configurationFile=./logback.xml",
+        "-Xms1G",
+        "-Xmx3G"
+      )
+    ),
     libraryDependencies ++= Seq(
       akkaHttp,
       akkaHttpCore,

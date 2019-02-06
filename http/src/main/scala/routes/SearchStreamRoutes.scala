@@ -126,15 +126,16 @@ trait SearchStreamRoutes {
             format match {
               case Some(a) if a == "html" =>
                 
-                val html = resp.map{ a =>
+                val html = resp.zipWithIndex.map{ (a, i) =>
                   ByteString(s"""<tr>
-                  |<td>${a.StartTime.toString()}</td>
-                  |<td>${a.FromStore}</td>
-                  |<td>${a.ToStore}</td>
-                  |<td>${a.StudyId}</td>
-                  |<td>${a.WSI}</td>
-                  |<td>${a.Caller}</td>
-                  |<td>${a.Response}</td>
+                  |<td style="width: 60px;">${i.toString()}</td>
+                  |<td style="width: 160px;">${a.StartTime.toString()}</td>
+                  |<td style="width: 160px;">${a.FromStore}</td>
+                  |<td style="width: 160px;">${a.ToStore}</td>
+                  |<td style="width: 160px;">${a.StudyId}</td>
+                  |<td style="width: 160px;">${a.WSI}</td>
+                  |<td style="width: 160px;">${a.Caller}</td>
+                  |<td style="width: 300px;" class="text">${a.Response}</td>
                   |</tr>""".stripMargin.replaceAll("\n", "") + "\n")
                 }
 
