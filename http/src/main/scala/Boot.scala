@@ -21,7 +21,7 @@ object Boot extends App with SearchStreamRoutes with StaticRoutes {
                 httpPublicRoutes ~
                   httpApiRoutes
 
-  val bindingFuture = Http().bindAndHandle(allRoutes, "localhost", 9000)
+  val bindingFuture = Http().bindAndHandle(allRoutes, "0.0.0.0", 7895)
   bindingFuture
     .map(_.localAddress)
     .map(addr => s"Bound to $addr")

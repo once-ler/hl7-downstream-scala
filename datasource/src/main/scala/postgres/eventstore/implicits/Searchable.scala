@@ -103,9 +103,9 @@ object SearchableLog {
         to_store ToStore, 
         study_id StudyId, 
         wsi WSI, caller Caller, 
-        response Response 
+        substring(response from 1 for 195) || ' ...' Response 
         from """ ++ 
-        Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
+        Fragment(schema, None) ++ fr".wsi_execution_hist where error = true and to_store = " ++ 
         Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
         Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
         Fragment(s"'${toDateTime.toString()}'", None)

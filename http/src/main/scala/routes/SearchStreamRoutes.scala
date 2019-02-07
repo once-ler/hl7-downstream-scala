@@ -51,7 +51,7 @@ trait SearchStreamRoutes {
         val sourceOfNumbers = Source(1 to 15)
         val byteStringSource =
           sourceOfNumbers.map(num => s"mrn:$num")
-            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
             .map(_.toString)
             .map(s => ByteString(s))
 
@@ -74,7 +74,7 @@ trait SearchStreamRoutes {
         val sourceOfNumbers = Source(1 to 15)
         val sourceOfSearchMessages =
           sourceOfNumbers.map(num => Patient(s"name:$num"))
-            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
 
         complete(sourceOfSearchMessages)
       }
@@ -90,14 +90,14 @@ trait SearchStreamRoutes {
         val sourceOfNumbers = Source(1 to 15)
         val sourceOfSearchMessages =
           sourceOfNumbers.map(num => Dummy(s"name:$num"))
-            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
 
         complete(sourceOfSearchMessages)
       } ~ post {
         entity(as[Patient]) { p =>
           val resp = CommandRunner
             .search[CaPatient](p.name)
-            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
             
           complete(resp)
         }
@@ -120,7 +120,7 @@ trait SearchStreamRoutes {
           
           val resp = CommandRunner
             .searchLog[ExecutionLogMini](p.toStore, p.fromDateTime, p.toDateTime)
-            .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
+            // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
           
           parameters('stream.?, 'format.?) { (stream, format) =>
             format match {
