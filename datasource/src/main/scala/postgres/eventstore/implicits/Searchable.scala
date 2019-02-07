@@ -103,7 +103,7 @@ object SearchableLog {
         to_store ToStore, 
         study_id StudyId, 
         wsi WSI, caller Caller, 
-        substring(response from 1 for 195) || ' ...' Response 
+        case when length(response) <= 195 then response else '... ' || substring(response from length(response) - 194 for 195) end Response
         from """ ++ 
         Fragment(schema, None) ++ fr".wsi_execution_hist where error = true and to_store = " ++ 
         Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++

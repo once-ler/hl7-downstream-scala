@@ -88,7 +88,7 @@ class TestDoobieSpec extends FunSpec with Matchers {
       to_store ToStore, 
       study_id StudyId, 
       wsi WSI, caller Caller, 
-      response Response 
+      case when length(response) <= 195 then response else '... ' || substring(response from length(response) - 194 for 195) end Response
       from ril.wsi_execution_hist limit(20)"""
         .query[ExecutionLogMini]
         .quick
