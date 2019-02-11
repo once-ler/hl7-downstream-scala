@@ -50,6 +50,14 @@ object CommandRunner {
     Source.single(src)
   }
 
+  def updateMany[A](a: List[A], schema: String = "hl7")(implicit updateManyable: UpdateManyable[A], typeTag: TypeTag[A]) = {
+    val io = updateManyable.updateMany(a, schema)
+
+    val src = tryRunIO(io)
+
+    Source.single(src)
+  }
+
   def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A], typeTag: TypeTag[A]) = {
     val io = creatable.create(primaryKeys, schema)
 

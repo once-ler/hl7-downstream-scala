@@ -40,7 +40,10 @@ trait Eventable[A] {
 
 trait Updatable[A] {
   def update(list: A, schema: String = "hl7")(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[Int]
-  // def update(list: List[A], schema: String = "hl7")(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[List[A]]
+}
+
+trait UpdateManyable[A] {
+  def updateMany(list: List[A], schema: String = "hl7")(implicit xa: Transactor[IO], typeTag: TypeTag[A]): IO[Int]
 }
 
 /*
@@ -207,27 +210,48 @@ object Updatable {
 
     }
   }
-/**
-  implicit object CaPatientControlUpdate extends Updatable[CaPatientControl] {
-    override def update(list: List[CaPatientControl], schema: String = "hl7")
-    (implicit xa: Transactor[IO], typeTag: TypeTag[CaPatientControl]): IO[List[CaPatientControl]] = {
 
-      type VersionControlRow = (String, String, Date)
+  implicit object ExecutionLogUpdate extends Updatable[ExecutionLog] {
+    override def update(a: ExecutionLog, schema: String = "ril")
+    (implicit xa: Transactor[IO], typeTag: TypeTag[ExecutionLog]): IO[Int] = {
+      type ExecutionLogRow = (Option[LocalDateTime], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[Boolean])
+
+      val row = (a.StartTime, a.FromStore, a.ToStore, a.StudyId, a.WSI, a.Caller, a.Request, a.Response, a.Error)
+      val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
+
+      val stmt =
+        s"""insert into $schema.$tname (
+        start_time, from_store, to_store, study_id, wsi, caller, request, response, error) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        on conflict(start_time, from_store, to_store, study_id, wsi, caller)
+        do update set request = EXCLUDED.request, response = EXCLUDED.response, error = EXCLUDED.error"""
+
+      Update[ExecutionLogRow](stmt)
+        .toUpdate0(row)
+        .run
+        .transact(xa)
+    }
+  }
+}
+
+object UpdateManyable {
+
+  implicit object ExecutionLogBatchUpdate extends UpdateManyable[ExecutionLog] {
+    override def update(a: List[ExecutionLog], schema: String = "ril")
+    (implicit xa: Transactor[IO], typeTag: TypeTag[ExecutionLog]): IO[Int] = {
+      type ExecutionLogRow = (Option[LocalDateTime], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[Boolean])
 
       val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
 
-      val rows = list.map(a => (tname, a.subscriber, a.startTime))
+      val stmt =
+        s"""insert into $schema.$tname (
+        start_time, from_store, to_store, study_id, wsi, caller, request, response, error) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        on conflict(start_time, from_store, to_store, study_id, wsi, caller)
+        do update set request = EXCLUDED.request, response = EXCLUDED.response, error = EXCLUDED.error"""
 
-      val stmt = s"""insert into $schema.model_last_execution (model, subscriber, start_time) values (?, ?, ?)
-      on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time"""
-
-      Update[VersionControlRow](stmt)
-        .updateManyWithGeneratedKeys[CaPatientControl]("model", "subscriber", "start_time")(rows)
-        .compile.toList.transact(xa)
-
+      Update[ExecutionLogRow](stmt).updateMany(a)
     }
   }
-**/
+
 }
 
 object Creatable {
