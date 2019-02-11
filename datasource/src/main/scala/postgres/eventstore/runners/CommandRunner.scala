@@ -2,7 +2,6 @@ package com.eztier.datasource.postgres.eventstore.runners
 
 import akka.stream.scaladsl.Source
 import java.util.UUID
-// import org.joda.time.DateTime
 import java.time.LocalDateTime
 
 import scala.reflect.runtime.universe._

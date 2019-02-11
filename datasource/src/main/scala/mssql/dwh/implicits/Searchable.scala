@@ -3,13 +3,11 @@ package com.eztier.datasource.mssql.dwh.implicits
 import cats.effect.IO
 import doobie._
 import doobie.implicits._
-// import org.joda.time.DateTime
 import java.time.LocalDateTime
-// import java.time.format.DateTimeFormatter;
 
-import com.eztier.datasource.common.models._
 import com.eztier.datasource.mssql.dwh.implicits.Transactors._
-import com.eztier.datasource.mssql.dwh.models.ExecutionLog
+import com.eztier.datasource.common.models.ExecutionLog
+import com.eztier.datasource.common.models.ExecutionLogImplicits._
 
 trait Searchable[A] {
   def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit xa: Transactor[IO]): IO[List[A]]

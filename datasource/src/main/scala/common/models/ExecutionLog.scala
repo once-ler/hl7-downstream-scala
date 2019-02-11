@@ -1,28 +1,22 @@
-package com.eztier.datasource.postgres.eventstore.models
+package com.eztier.datasource.common.models
 
 import doobie.util.Meta
-// import cats._
-// import cats.implicits._
-
-// import java.util.Date
-import java.sql.Timestamp
 import java.time.LocalDateTime
 
 // circe unmarshalling DateTime support
-// import io.circe.{Encoder, Decoder}
 import io.circe.generic.semiauto._
 import io.circe.java8.time._
 
 case class ExecutionLog(
-  StartTime: LocalDateTime,
-  FromStore: String,
-  ToStore: String,
-  StudyId: String,
-  WSI: String,
-  Caller: String,
-  Request: String,
-  Response: String,
-  Error: Boolean
+  StartTime: Option[LocalDateTime],
+  FromStore: Option[String],
+  ToStore: Option[String],
+  StudyId: Option[String],
+  WSI: Option[String],
+  Caller: Option[String],
+  Request: Option[String],
+  Response: Option[String],
+  Error: Option[Boolean]
 )
 
 case class ExecutionLogMini(
@@ -40,28 +34,28 @@ object ExecutionLogImplicits {
     * JodaTime
     To convert JodaTime's org.joda.time.LocalDate to java.sql.Timestamp, just do:
       Timestamp timestamp = new Timestamp(localDate.toDateTimeAtStartOfDay().getMillis());
-      
+
     To convert JodaTime's org.joda.time.LocalDateTime to java.sql.Timestamp, just do:
       Timestamp timestamp = new Timestamp(localDateTime.toDateTime().getMillis());
 
     * JavaTime
     To convert Java8's java.time.LocalDate to java.sql.Timestamp, just do:
       Timestamp timestamp = Timestamp.valueOf(localDate.atStartOfDay());
-      
-    To convert Java8's java.time.LocalDateTime to java.sql.Timestamp, just do:      
+
+    To convert Java8's java.time.LocalDateTime to java.sql.Timestamp, just do:
       Timestamp timestamp = Timestamp.valueOf(localDateTime);
   */
 
-  // doobie LocalDateTime
+  // doobie meta for LocalDateTime
   /**
     * imap:
     * def imap[B](f: A => B)(g: B => A): Meta[B]
-  ***/
+    ***/
   implicit val LocalDateTimeMeta: Meta[LocalDateTime] =
     Meta[java.sql.Timestamp].imap(_.toLocalDateTime)(java.sql.Timestamp.valueOf)
-    
 
-  // circe LocalDateTime
+
+  // circe encoder/deconder for LocalDateTime
   implicit val AEncoder = deriveEncoder[ExecutionLogMini]
   implicit val ADecoder = deriveDecoder[ExecutionLogMini]
 

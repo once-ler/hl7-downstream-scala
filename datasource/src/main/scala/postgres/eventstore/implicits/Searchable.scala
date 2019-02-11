@@ -2,12 +2,10 @@ package com.eztier.datasource.postgres.eventstore.implicits
 
 import java.util.Date
 import scala.reflect.runtime.universe._
-// import org.joda.time.DateTime
 import java.time.LocalDateTime
 
 import doobie._
 import doobie.implicits._
-// import doobie.postgres._
 import doobie.postgres.implicits._
 
 import cats.implicits._ // Required for Foldable[F] for VersionControlRow type
@@ -15,12 +13,13 @@ import cats.effect.IO
 
 import com.eztier.cassandra.CaCommon._
 import com.eztier.hl7mock.types.CaPatient
-import com.eztier.datasource.postgres.eventstore.models.CaPatient._
 import com.eztier.datasource.postgres.eventstore.models._
+import com.eztier.datasource.postgres.eventstore.models.CaPatientImplicits._
 import com.eztier.datasource.common.models.{Patient, Model}
 
 // Required for implicitly converting java.sql.Timestamp -> java.time.LocalDateTime
-import com.eztier.datasource.postgres.eventstore.models.ExecutionLogImplicits._
+import com.eztier.datasource.common.models._
+import com.eztier.datasource.common.models.ExecutionLogImplicits._
 
 trait Searchable[A] {
   def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[A]]

@@ -11,7 +11,7 @@ import io.circe.syntax._
 
 import com.eztier.hl7mock.types._
 
-object CaPatient {
+object CaPatientImplicits {
   import doobie.postgres.circe.jsonb.implicits._
   
   val renameKeys = (name: String) => name.charAt(0).toLower.toString + name.substring(1)

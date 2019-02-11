@@ -9,7 +9,7 @@ import scala.reflect.runtime.universe._
 
 import com.eztier.datasource.mssql.dwh.implicits._
 import com.eztier.datasource.mssql.dwh.implicits.Transactors._
-import com.eztier.datasource.mssql.dwh.models.{ExecutionLog}
+// import com.eztier.datasource.common.models.{ExecutionLog}
 
 import com.eztier.datasource.common.runners.CommandRunner._
 

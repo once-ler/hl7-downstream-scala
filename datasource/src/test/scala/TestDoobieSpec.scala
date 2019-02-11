@@ -9,11 +9,11 @@ import akka.stream.scaladsl.Sink
 
 import com.eztier.datasource.common.runners.{CommandRunner => CommandRunnerCommon}
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
-import com.eztier.datasource.postgres.eventstore.models._
 import com.eztier.hl7mock.types.CaPatient
 
 // Required for implicitly converting java.sql.Timestamp -> java.time.LocalDateTime
-import com.eztier.datasource.postgres.eventstore.models.ExecutionLogImplicits._
+import com.eztier.datasource.common.models._
+import com.eztier.datasource.common.models.ExecutionLogImplicits._
 
 // For yolo xa
 // import org.joda.time.DateTime

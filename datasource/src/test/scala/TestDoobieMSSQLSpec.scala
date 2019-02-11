@@ -24,8 +24,10 @@ import cats.effect.IO
 import doobie._
 import doobie.implicits._
 
+import com.eztier.datasource.common.models.ExecutionLog
+import com.eztier.datasource.common.models.ExecutionLogImplicits._
+
 import com.eztier.datasource.mssql.dwh.runners.CommandRunner
-import com.eztier.datasource.mssql.dwh.models.ExecutionLog
 import com.eztier.datasource.mssql.dwh.implicits.Transactors._
 
 // sbt "project datasource" testOnly *TestDoobieMSSQLSpec
@@ -54,7 +56,7 @@ class TestDoobieMSSQLSpec extends FunSpec with Matchers {
       r1.foreach(println(_))
 
     }
-    /*
+
     it("Construct valid SQL statement") {
       
       val stmt = fr"""select 
@@ -85,7 +87,7 @@ class TestDoobieMSSQLSpec extends FunSpec with Matchers {
       // Fin Testing
 
     }
-    */
+
   }
 
 } 
