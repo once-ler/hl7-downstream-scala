@@ -4,6 +4,8 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.Http
 import akka.stream.ActorMaterializer
 import akka.http.scaladsl.server.Directives._
+
+import com.eztier.common.Configuration._
 import com.eztier.rest.routes.SearchStreamRoutes
 import com.eztier.rest.routes.StaticRoutes
 
@@ -12,7 +14,11 @@ object Boot extends App with SearchStreamRoutes with StaticRoutes {
   implicit val streamMaterializer = ActorMaterializer()
   implicit val executionContext = actorSystem.dispatcher
   implicit val logger = actorSystem.log
-  val allRoutes = 
+
+  val bindAddress = conf.getString(s"$env.bind-address")
+  val port = conf.getInt(s"$env.port")
+
+  val allRoutes =
     httpStreamingRoutes ~ 
       httpInfoStreamingRoutes ~ 
         httpStreamingSearchRoutes ~ 
@@ -21,7 +27,7 @@ object Boot extends App with SearchStreamRoutes with StaticRoutes {
                 httpPublicRoutes ~
                   httpApiRoutes
 
-  val bindingFuture = Http().bindAndHandle(allRoutes, "0.0.0.0", 7895)
+  val bindingFuture = Http().bindAndHandle(allRoutes, bindAddress, port)
   bindingFuture
     .map(_.localAddress)
     .map(addr => s"Bound to $addr")
