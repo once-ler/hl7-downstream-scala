@@ -25,10 +25,10 @@ import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 
 // Marshalled types
 import com.eztier.hl7mock.types.CaPatient
-import com.eztier.datasource.postgres.eventstore.models.ExecutionLogMini
+import com.eztier.datasource.common.models.ExecutionLogMini
 
 // Unmarshaller for circe
-import com.eztier.datasource.postgres.eventstore.models.CaPatient._
+import com.eztier.datasource.postgres.eventstore.models.CaPatientImplicits._
 
 // For testing
 case class Dummy(name: String)

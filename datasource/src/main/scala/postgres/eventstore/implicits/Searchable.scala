@@ -236,9 +236,9 @@ object Updatable {
 object UpdateManyable {
 
   implicit object ExecutionLogBatchUpdate extends UpdateManyable[ExecutionLog] {
-    override def update(a: List[ExecutionLog], schema: String = "ril")
+    override def updateMany(a: List[ExecutionLog], schema: String = "hl7")
     (implicit xa: Transactor[IO], typeTag: TypeTag[ExecutionLog]): IO[Int] = {
-      type ExecutionLogRow = (Option[LocalDateTime], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[Boolean])
+      // type ExecutionLogRow = (Option[LocalDateTime], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[String], Option[Boolean])
 
       val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
 
@@ -248,7 +248,9 @@ object UpdateManyable {
         on conflict(start_time, from_store, to_store, study_id, wsi, caller)
         do update set request = EXCLUDED.request, response = EXCLUDED.response, error = EXCLUDED.error"""
 
-      Update[ExecutionLogRow](stmt).updateMany(a)
+      Update[ExecutionLog](stmt)
+        .updateMany(a)
+        .transact(xa)
     }
   }
 
