@@ -21,8 +21,9 @@ object Boot extends App with SearchStreamRoutes with StaticRoutes {
   val allRoutes =
     httpStreamingRoutes ~ 
       httpInfoStreamingRoutes ~ 
-        httpStreamingSearchRoutes ~ 
-          httpStreamingSearchLogRoutes ~
+        httpStreamingSearchRoutes ~
+          httpStreamSearchAggregationLogRoutes ~
+            httpStreamingSearchLogRoutes ~
               httpStaticRoutes ~
                 httpPublicRoutes ~
                   httpApiRoutes

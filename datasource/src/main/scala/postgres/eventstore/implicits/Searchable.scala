@@ -166,6 +166,19 @@ object AdHocable {
     }
   }
 
+  implicit object ExecutionAggregationLogAdhoc extends AdHocable[ExecutionAggregationLog] {
+    override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionAggregationLog]] = {
+
+      val stmt = Fragment(sqlstring, None)
+      stmt
+        .query[ExecutionAggregationLog]
+        .stream
+        .compile
+        .to[List]
+        .transact(xa)
+    }
+  }
+
 }
 
 object Eventable {

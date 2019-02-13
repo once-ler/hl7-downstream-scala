@@ -32,8 +32,8 @@ object CommandRunner {
     Source(src)
   }
 
-  def adhoc[A](sqlstring: String, schema: String = "hl7")(implicit adhocable: AdHocable[A], typeTag: TypeTag[A]): Source[A, akka.NotUsed] = {
-    val t = schema + "." + typeTag.tpe.typeSymbol.name.toString.toLowerCase
+  def adhoc[A](sqlstring: String)(implicit adhocable: AdHocable[A]): Source[A, akka.NotUsed] = {
+    // val t = schema + "." + typeTag.tpe.typeSymbol.name.toString.toLowerCase
 
     val io = adhocable.adhoc(sqlstring)
 

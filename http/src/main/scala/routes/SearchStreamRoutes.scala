@@ -4,6 +4,7 @@ import akka.actor.ActorSystem
 import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.HttpEntity
+import com.eztier.datasource.common.models.ExecutionAggregationLog
 // import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives._
 // import ContentTypeResolver.Default
@@ -42,6 +43,7 @@ trait SearchStreamRoutes {
   lazy val httpInfoStreamingRoutes = streamingInfoRoute
   lazy val httpStreamingSearchRoutes = streamingSearchRoute
   lazy val httpStreamingSearchLogRoutes = streamingSearchLogRoute
+  lazy val httpStreamSearchAggregationLogRoutes = streamingSearchAggregationLogRoute
 
   implicit val jsonStreamingSupport: akka.http.scaladsl.common.JsonEntityStreamingSupport = EntityStreamingSupport.json()
 
@@ -159,6 +161,19 @@ trait SearchStreamRoutes {
           }
         }
 
+      }
+    }
+  }
+
+  def streamingSearchAggregationLogRoute = {
+    path("log" / "agg") {
+      get {
+        val q = "select symbol, date, price from ril.wsi_execution_error_agg"
+
+        val resp = CommandRunner
+          .adhoc[ExecutionAggregationLog](q)
+
+        complete(resp)
       }
     }
   }

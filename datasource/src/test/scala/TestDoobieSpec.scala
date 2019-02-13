@@ -97,6 +97,14 @@ class TestDoobieSpec extends FunSpec with Matchers {
         .quick
         .unsafeRunSync
 
+      sql"""select symbol, date, price from ril.wsi_execution_error_agg
+      """
+      .query[ExecutionAggregationLog]
+      .stream
+      .take(10)
+      .quick
+      .unsafeRunSync
+
       sql"select start_time, Response from ril.wsi_execution_hist"
         .query[(Timestamp, String)]
         .stream
@@ -104,6 +112,18 @@ class TestDoobieSpec extends FunSpec with Matchers {
         .quick
         .unsafeRunSync
       // Fin Testing
+  }
+
+  it("Can select multi columns into a type") {
+    val q0 = sql"select symbol, date, price from ril.wsi_execution_error_agg limit 5"
+      .query[ExecutionAggregationLog]
+
+    val g = CommandRunnerCommon.adhoc(q0)
+      .runWith(Sink.seq)
+
+    val r1 = Await.result(g, 500 millis)
+
+    r1.foreach(println(_))
   }
 
   it("Can select multi columns into a list of tuples") {
