@@ -1,16 +1,11 @@
 package com.eztier.datasource.mssql.dwh.runners
 
 import akka.stream.scaladsl.Source
-
-import cats.effect.IO
-// import org.joda.time.DateTime
 import java.time.LocalDateTime
 import scala.reflect.runtime.universe._
 
 import com.eztier.datasource.mssql.dwh.implicits._
 import com.eztier.datasource.mssql.dwh.implicits.Transactors._
-// import com.eztier.datasource.common.models.{ExecutionLog}
-
 import com.eztier.datasource.common.runners.CommandRunner._
 
 object CommandRunner {

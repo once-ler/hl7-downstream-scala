@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.18",
+  version := "0.1.19",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -112,6 +112,9 @@ val circeJava8 = "io.circe" %% "circe-java8" % "0.11.1"
 val cassandraUdt = "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.19"
 val hl7cassandraAdapter =  "com.eztier" %% "hl7-cassandra-adapter-scala" % "0.3.8"
 
+// MongoDB
+val alpakkaMongoDB = "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "1.0-M2"
+
 lazy val datasource = project.
   settings(
     name := "datasource",
@@ -125,7 +128,8 @@ lazy val datasource = project.
       circeJava8,
       cassandraUdt,
       hl7cassandraAdapter,
-      sqljdbc
+      sqljdbc,
+      alpakkaMongoDB
     )
   ).dependsOn(
     common

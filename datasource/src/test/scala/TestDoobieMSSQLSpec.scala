@@ -1,7 +1,8 @@
 package com.eztier.test
 
 import java.util.Date
-// import org.joda.time.DateTime
+
+import com.eztier.datasource.mssql.dwh.runners.CommandRunner
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter.{
   ISO_LOCAL_DATE,
@@ -26,8 +27,6 @@ import doobie.implicits._
 
 import com.eztier.datasource.common.models.ExecutionLog
 import com.eztier.datasource.common.models.ExecutionLogImplicits._
-
-import com.eztier.datasource.mssql.dwh.runners.CommandRunner
 import com.eztier.datasource.mssql.dwh.implicits.Transactors._
 
 // sbt "project datasource" testOnly *TestDoobieMSSQLSpec
