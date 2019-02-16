@@ -199,7 +199,7 @@ lazy val integration = project.
       )
     ),
     libraryDependencies ++= Seq(
-
+      scalaTest
     )
   ).dependsOn(
     common,

@@ -58,7 +58,7 @@ object Hl7MongoToCassandra {
   }
 
   def persistToCassandra = Flow[String].map { m =>
-    val f = CassandraCommandRuner.update[CaPatient, CaPatientControl](m)
+    val f = CassandraCommandRuner.update[CaHl7, CaHl7Control](m)
 
     Await.result(f, 10 seconds)
   }
