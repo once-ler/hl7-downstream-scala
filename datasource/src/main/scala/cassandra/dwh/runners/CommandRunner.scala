@@ -1,16 +1,17 @@
 package com.eztier.datasource.cassandra.dwh.runners
 
-import com.datastax.driver.core.ResultSet
-
 import scala.concurrent.Future
-import com.eztier.datasource.cassandra.dwh.implicits.{Searchable, Updatable}
+import com.datastax.driver.core.ResultSet
+import com.eztier.adapter.Hl7CassandraAdapter
+import com.eztier.datasource.cassandra.dwh.implicits._
+import com.eztier.hl7mock.{CaBase, CaControl}
 
 object CommandRunner {
-  def update[A, B](msg: String)(implicit updatable: Updatable[A, B]): Future[Int] = {
+  def update[A <: CaBase, B <: CaControl](msg: String)(implicit updatable: Updatable[A, B]): Future[Int] = {
     updatable.update(msg)
   }
 
-  def search[A, B](stmt: String)(implicit searchable: Searchable[A, B]): Future[ResultSet] = {
+  def search[A <: CaBase, B <: CaControl](stmt: String)(implicit searchable: Searchable[A, B]): Future[ResultSet] = {
     searchable.search(stmt)
   }
 }

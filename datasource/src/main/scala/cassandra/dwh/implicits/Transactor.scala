@@ -9,6 +9,6 @@ object Transactors {
 
   // TODO: Need to add overloaded constructor to accept Config object and not just configPath string.
   // This is needed production option for reading file from external file.
-  implicit lazy val xa = Hl7CassandraAdapter[CaHl7, CaHl7Control]("$env.cassandra", keySpace)
-  implicit lazy val xa1 = Hl7CassandraAdapter[CaPatient, CaPatientControl]("$env.cassandra", keySpace)
+  implicit lazy val xaCaHl7 = Hl7CassandraAdapter[CaHl7, CaHl7Control](s"$env.cassandra", keySpace)
+  implicit lazy val xaCaPatient = Hl7CassandraAdapter[CaPatient, CaPatientControl](s"$env.cassandra", keySpace)
 }

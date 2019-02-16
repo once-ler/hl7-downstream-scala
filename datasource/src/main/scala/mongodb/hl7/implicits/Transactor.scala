@@ -17,8 +17,7 @@ object Transactors {
   private val codecRegistry = fromRegistries(fromProviders(classOf[Hl7Message]), DEFAULT_CODEC_REGISTRY)
 
   private val db = client.getDatabase(database).withCodecRegistry(codecRegistry)
-  // private val hl7Coll = db.getCollection("hl7")
 
-  implicit val xa: MongoCollection[Hl7Message] = db.getCollection(collection)
+  implicit val xaHl7Message: MongoCollection[Hl7Message] = db.getCollection(collection)
 
 }
