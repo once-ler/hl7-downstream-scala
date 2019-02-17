@@ -77,6 +77,7 @@ object Hl7MongoToCassandra {
         val r = s
           .via(messageToRaw)
           .via(balancer(persistToCassandra,10))
+          .log("Persist")
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
