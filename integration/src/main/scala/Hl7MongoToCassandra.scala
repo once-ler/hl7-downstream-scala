@@ -23,7 +23,7 @@ object Hl7MongoToCassandra {
   implicit val logger = actorSystem.log
 
   def getLastHl7MessageUploaded = {
-    val fut = CassandraCommandRuner.search[CaHl7, CaHl7Control](s"select create_date from dwh.ca_table_date_control where id = ca_hl_7")
+    val fut = CassandraCommandRuner.search[CaHl7, CaHl7Control](s"select create_date from dwh.ca_table_date_control where id = 'ca_hl_7_control' limit 1")
 
     val fut2: Future[Long] = fut
       .map { rs =>
