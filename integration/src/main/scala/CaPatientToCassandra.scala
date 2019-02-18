@@ -48,20 +48,10 @@ object CaPatientToCassandra {
     val to = from.plusHours(3).minusSeconds(1)
     // runWithRowFilter() will query from ca_table_date_control and look for id "ca_hl_7"
     val r = xaCaPatient.flow.runWithRowFilter(s"create_date >= '${from.toString}' and create_date < '${to.toString}'", 10)
-    // Update date control
-    import com.eztier.cassandra.CaCommon.camelToUnderscores
-    import com.eztier.hl7mock.CaCommonImplicits._
+    // Update date
+    val f = CassandraCommandRuner.updateDate(to)
+    val r2 = Await.result(f, 10 seconds)
 
-    val x = camelToUnderscores(CaHl7Control().getClass.getSimpleName)
-    val updateTime = Date.from(to.atOffset(ZoneOffset.UTC).toInstant)
-    val el = CaTableDateControl(Id = x, CreateDate = updateTime)
-    val insertStatement = el.getInsertStatement("dwh")
-    val qs = insertStatement.getQueryString()
-
-    val up = xaCaPatient.flow.provider.insertAsync(insertStatement)
-    val r2 = Await.result(up, 10 seconds)
-
-    r2
-
+    (r, r2)
   }
 }
