@@ -35,7 +35,8 @@ object Hl7MongoToCassandra {
       .recover {
         case _ =>
           LocalDateTime
-            .parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            // .parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+            .now.minusHours(1)
             .atZone(ZoneId.systemDefault())
             .toInstant
             .toEpochMilli
