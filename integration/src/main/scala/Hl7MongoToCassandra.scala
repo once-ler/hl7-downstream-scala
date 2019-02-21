@@ -61,10 +61,11 @@ object Hl7MongoToCassandra {
     MongoCommandRunner.search[Hl7Message](from, to)
   }
 
-  def messageToRaw = Flow[Hl7Message].map { msg =>
-    msg.raw.foldLeft(""){
+  def messageToRaw = Flow[Hl7Message].mapAsync(parallelism = 100) { msg =>
+    val m = msg.raw.foldLeft(""){
       (a, n) => a + n + "\r"
     }
+    Future(m)
   }
 
   def retry[T](f: => Future[T], delays: Seq[FiniteDuration])(implicit ec: ExecutionContext): Future[T] = {
