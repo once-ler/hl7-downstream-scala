@@ -92,6 +92,7 @@ object Hl7MongoToCassandra {
       case Some(s) =>
         val r = s
           .via(messageToRaw)
+          .filter(_ != null)
           .via(balancer(persistToCassandra,10))
           .log("Persist")
           .grouped(100000)
