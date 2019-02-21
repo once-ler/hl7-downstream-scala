@@ -61,7 +61,7 @@ object Hl7MongoToCassandra {
   def persistToCassandra = Flow[String].map { m =>
     val f = CassandraCommandRuner.update[CaHl7, CaHl7Control](m)
 
-    Await.result(f, 10 seconds)
+    Await.result(f, Duration.Inf)
   }
 
   def logProgress = Flow[Seq[Int]].map { a =>
