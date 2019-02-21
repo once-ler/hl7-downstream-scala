@@ -8,10 +8,11 @@ import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink}
 // For akka retry
 import akka.pattern.after
-import com.datastax.driver.core.Row
 
+import com.datastax.driver.core.Row
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
+
 import com.eztier.datasource.cassandra.dwh.runners.{CommandRunner => CassandraCommandRuner}
 import com.eztier.datasource.mongodb.hl7.runners.{CommandRunner => MongoCommandRunner}
 import com.eztier.datasource.mongodb.hl7.models.Hl7Message
@@ -22,6 +23,7 @@ object Hl7MongoToCassandra {
   implicit val actorSystem = ActorSystem(name = "integration-actor-system")
   implicit val streamMaterializer = ActorMaterializer()
   implicit val executionContext = actorSystem.dispatcher
+  implicit val scheduler = actorSystem.scheduler
   implicit val logger = actorSystem.log
 
   def getLastHl7MessageUploaded = {
@@ -65,8 +67,8 @@ object Hl7MongoToCassandra {
     }
   }
 
-  def retry[T](f: => Future[T], delays: Seq[FiniteDuration])(implicit ec: ExecutionContext, s: Scheduler): Future[T] = {
-    f recoverWith { case _ if delays.nonEmpty => after(delays.head, s)(retry(f, delays.tail)) }
+  def retry[T](f: => Future[T], delays: Seq[FiniteDuration])(implicit ec: ExecutionContext): Future[T] = {
+    f recoverWith { case _ if delays.nonEmpty => after(delays.head, scheduler)(retry(f, delays.tail)) }
   }
 
   def persistToCassandra = Flow[String].map { m =>
