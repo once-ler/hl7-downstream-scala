@@ -1,7 +1,7 @@
 package com.eztier.integration.hl7
 
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime, ZoneId}
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneId}
 
 import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
@@ -27,12 +27,13 @@ object Hl7MongoToCassandra {
   def getLastHl7MessageUploaded = {
     val fut = CassandraCommandRuner.search[CaHl7, CaHl7Control](s"select create_date from dwh.ca_table_date_control where id = 'ca_hl_7_control' limit 1")
 
-    val fut2: Future[Long] = fut
+    val fut2: Future[Instant] = fut
       .map { rs =>
         val row: Row = rs.one()
         val dt = row.getTimestamp("create_date")
 
-        dt.getTime
+        // dt.getTime
+        dt.toInstant
       }
       .recover {
         case _ =>
@@ -41,15 +42,19 @@ object Hl7MongoToCassandra {
             .now.minusHours(1)
             .atZone(ZoneId.systemDefault())
             .toInstant
-            .toEpochMilli
+            // .toEpochMilli
       }
 
     Await.result(fut2, 10 seconds)
   }
 
   def getMongoSource = {
-    val from = getLastHl7MessageUploaded
-    val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
+    val fromDt = getLastHl7MessageUploaded.atZone(ZoneId.systemDefault()).toLocalDateTime
+    val toDt = fromDt.plusHours(3)
+
+    val from = fromDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
+    val to = toDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
+    // val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
 
     MongoCommandRunner.search[Hl7Message](from, to)
   }
@@ -94,6 +99,14 @@ object Hl7MongoToCassandra {
         Await.result(r, Duration.Inf)
       case _ => 0
     }
+  }
+
+  def runMongoToCassandra = {
+    var r: Int = 0
+
+    do (r = r + streamMongoToCassandra) while (r > 0)
+
+    r
   }
 
 }
