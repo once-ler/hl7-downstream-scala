@@ -3,12 +3,14 @@ package com.eztier.integration.hl7
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime, ZoneId}
 
-import akka.actor.ActorSystem
+import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink}
+// For akka retry
+import akka.pattern.after
 import com.datastax.driver.core.Row
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import com.eztier.datasource.cassandra.dwh.runners.{CommandRunner => CassandraCommandRuner}
 import com.eztier.datasource.mongodb.hl7.runners.{CommandRunner => MongoCommandRunner}
@@ -58,10 +60,16 @@ object Hl7MongoToCassandra {
     }
   }
 
+  def retry[T](f: => Future[T], delays: Seq[FiniteDuration])(implicit ec: ExecutionContext, s: Scheduler): Future[T] = {
+    f recoverWith { case _ if delays.nonEmpty => after(delays.head, s)(retry(f, delays.tail)) }
+  }
+
   def persistToCassandra = Flow[String].map { m =>
     val f = CassandraCommandRuner.update[CaHl7, CaHl7Control](m)
 
-    Await.result(f, Duration.Inf)
+    val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
+
+    Await.result(f1, Duration.Inf)
   }
 
   def logProgress = Flow[Seq[Int]].map { a =>
