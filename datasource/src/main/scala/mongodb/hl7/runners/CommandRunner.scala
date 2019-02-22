@@ -12,4 +12,8 @@ object CommandRunner {
   def insert[A](a: A)(implicit  insertable: Insertable[A]) = {
     insertable.insert(a)
   }
+
+  def findOne[A](implicit searchable: Searchable[A]) = {
+    searchable.findOne
+  }
 }

@@ -39,12 +39,19 @@ object Hl7MongoToCassandra {
       }
       .recover {
         case _ =>
-          LocalDateTime
-            // .parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-            .now.minusHours(1)
-            .atZone(ZoneId.systemDefault())
-            .toInstant
-            // .toEpochMilli
+
+          val fs = MongoCommandRunner.findOne[Hl7Message]
+
+          fs match {
+            case Some(a) => Instant.ofEpochMilli(a.dateCreated).atZone(ZoneId.systemDefault()).toInstant
+            case _ =>
+              LocalDateTime
+                // .parse("1970-01-01T00:00:00", DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                .now.minusHours(1)
+                .atZone(ZoneId.systemDefault())
+                .toInstant
+                // .toEpochMilli
+          }
       }
 
     Await.result(fut2, 10 seconds)
