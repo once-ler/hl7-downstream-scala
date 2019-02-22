@@ -81,6 +81,7 @@ object Hl7MongoToCassandra {
 
   def persistToCassandra = Flow[String].map { m =>
     val f = CassandraCommandRuner.update[CaHl7, CaHl7Control](m)
+    f.recover{ case _ => 0 }
 
     val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
 
