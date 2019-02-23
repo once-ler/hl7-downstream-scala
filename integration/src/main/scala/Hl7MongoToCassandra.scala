@@ -82,17 +82,20 @@ object Hl7MongoToCassandra {
     val to = toDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
     // val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
 
+    logger.error(s"Processing ${fromDt.toString} to ${toDt.toString}")
+
     MongoCommandRunner.search[Hl7Message](from, to)
   }
 
-  def messageToRaw = Flow[Hl7Message].mapAsync(parallelism = 100) { msg =>
+  def messageToRaw = Flow[Hl7Message].mapAsync(parallelism = 10) { msg =>
     val m = msg.raw.foldLeft(""){
       (a, n) => a + n + "\r"
     }
     Future(m)
   }
 
-  val rawToCa = Flow[String].mapAsync(parallelism = 100) {
+  val rawToCa = Flow[String].mapAsync(parallelism = 10) {
+  // val rawToCa = Flow[String].map {
     str =>
       val m = Hapi.parseMessage(str)
 
@@ -104,9 +107,11 @@ object Hl7MongoToCassandra {
       }
 
       Future(res)
+      // res
   }
 
-  val caToInsert = Flow[Option[CaHl7]].mapAsync(parallelism = 100) {
+  val caToInsert = Flow[Option[CaHl7]].mapAsync(parallelism = 10) {
+  // val caToInsert = Flow[Option[CaHl7]].map {
     maybeCa =>
       val ca = maybeCa.get
       val caControl: CaHl7Control = ca
@@ -116,6 +121,7 @@ object Hl7MongoToCassandra {
 
       // val qs = ins1.getQueryString()
       Future(List[(Date, Insert)]((ca.CreateDate, ins1), (ca.CreateDate, ins2)))
+      // List[(Date, Insert)]((ca.CreateDate, ins1), (ca.CreateDate, ins2))
   }
 
   // https://www.datastax.com/dev/blog/java-driver-async-queries
@@ -129,7 +135,7 @@ object Hl7MongoToCassandra {
     p.future
   }
 
-  val batch = Flow[Seq[(Date, Insert)]].map {
+  val batch = Flow[Seq[(Date, Insert)]].mapAsync(parallelism = 10) {
     tup =>
       val stmts = tup.map(_._2)
       val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(stmts.asJava)
@@ -142,6 +148,27 @@ object Hl7MongoToCassandra {
 
       Await.result(f1, Duration.Inf)
 
+      Future(tup.map(_._1))
+  }
+
+  // val batch2 = Flow[Seq[Seq[(Date, Insert)]]].mapAsync(parallelism = 10) {
+  val batch2 = Flow[Seq[Seq[(Date, Insert)]]].map {
+    ser =>
+      // logger.error(s"batch size ${ser.length}")
+      val tup = ser.flatten
+
+      val stmts = tup.map(_._2)
+      val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(stmts.asJava)
+
+      val f: Future[ResultSet] = session.executeAsync(batchStatement)
+
+      f.recover{ case _ =>  None}
+
+      val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
+
+      Await.result(f1, Duration.Inf)
+
+      // Future(tup.map(_._1))
       tup.map(_._1)
   }
 
@@ -153,6 +180,7 @@ object Hl7MongoToCassandra {
     .map{
       a =>
         val uts = a.max
+        // logger.error(uts.toString)
         val c3 = CaTableDateControl(
           Id = camelToUnderscores("CaHl7Control"),
           CreateDate = uts
@@ -182,7 +210,7 @@ object Hl7MongoToCassandra {
 
   def logProgress = Flow[Seq[Int]].map { a =>
     val t = a.sum
-    logger.info(s"Persisted $t messages")
+    // logger.info(s"Persisted $t messages")
     t
   }
 
@@ -191,29 +219,46 @@ object Hl7MongoToCassandra {
 
     o match {
       case Some(s) =>
+/*
         val r = s
           .via(messageToRaw)
           .filter(_ != null)
           .via(rawToCa)
           .filter(_ != None)
           .via(caToInsert)
-          .mapConcat(identity)
-          .grouped(50)
-          .via(batch)
+          // .mapConcat(identity)
+          .grouped(200)
+          .via(batch2)
           .via(updateControl)
+          // .grouped(100000)
+          // .via(logProgress)
           .runWith(Sink.head)
+*/
 
-        /*
+        // TODO: Regardless of outcome.  Need to update date control.
+
         val r = s
           .via(messageToRaw)
           .filter(_ != null)
-          .via(balancer(persistToCassandra,10))
+          .via(rawToCa)
+          .filter(_ != None)
+          .via(caToInsert)
+          .via(balancer(batch,100))
+          .via(updateControl)
           .log("Persist")
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
-        */
-
+/*
+        val r = s
+          .via(messageToRaw)
+          .filter(_ != null)
+          .via(balancer(persistToCassandra,100))
+          .log("Persist")
+          .grouped(100000)
+          .via(logProgress)
+          .runWith(Sink.head)
+*/
         Await.result(r, Duration.Inf)
       case _ => 0
     }
