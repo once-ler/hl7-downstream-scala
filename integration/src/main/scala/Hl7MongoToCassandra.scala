@@ -1,7 +1,7 @@
 package com.eztier.integration.hl7
 
 import java.time.format.DateTimeFormatter
-import java.time.{Instant, LocalDate, LocalDateTime, ZoneId}
+import java.time._
 import java.util.Date
 
 import akka.actor.{ActorSystem, Scheduler}
@@ -15,6 +15,7 @@ import akka.pattern.after
 
 import com.datastax.driver.core.Row
 import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
 
 import com.eztier.datasource.cassandra.dwh.runners.{CommandRunner => CassandraCommandRuner}
@@ -42,6 +43,8 @@ object Hl7MongoToCassandra {
   implicit val logger = actorSystem.log
 
   val session = xaCaHl7.flow.provider.session
+
+  var nextDate: Date = new Date()
 
   def getLastHl7MessageUploaded = {
     val fut = CassandraCommandRuner.search[CaHl7, CaHl7Control](s"select create_date from dwh.ca_table_date_control where id = 'ca_hl_7_control' limit 1")
@@ -83,6 +86,8 @@ object Hl7MongoToCassandra {
     // val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
 
     logger.error(s"Processing ${fromDt.toString} to ${toDt.toString}")
+
+    nextDate = Date.from(toDt.atZone(ZoneId.systemDefault()).toInstant)
 
     MongoCommandRunner.search[Hl7Message](from, to)
   }
@@ -135,7 +140,8 @@ object Hl7MongoToCassandra {
     p.future
   }
 
-  val batch = Flow[Seq[(Date, Insert)]].mapAsync(parallelism = 10) {
+  // val batch = Flow[Seq[(Date, Insert)]].mapAsync(parallelism = 10) {
+  val batch = Flow[Seq[(Date, Insert)]].map {
     tup =>
       val stmts = tup.map(_._2)
       val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(stmts.asJava)
@@ -148,7 +154,7 @@ object Hl7MongoToCassandra {
 
       Await.result(f1, Duration.Inf)
 
-      Future(tup.map(_._1))
+      tup.length
   }
 
   // val batch2 = Flow[Seq[Seq[(Date, Insert)]]].mapAsync(parallelism = 10) {
@@ -176,27 +182,21 @@ object Hl7MongoToCassandra {
     f recoverWith { case _ if delays.nonEmpty => after(delays.head, scheduler)(retry(f, delays.tail)) }
   }
 
-  val updateControl = Flow[Seq[Date]]
-    .map{
-      a =>
-        val uts = a.max
-        // logger.error(uts.toString)
-        val c3 = CaTableDateControl(
-          Id = camelToUnderscores("CaHl7Control"),
-          CreateDate = uts
-        )
-        val ins3 = c3 getInsertStatement(keySpace)
+  val updateControl = {
+    val c3 = CaTableDateControl(
+      Id = camelToUnderscores("CaHl7Control"),
+      CreateDate = nextDate
+    )
+    val ins3 = c3 getInsertStatement(keySpace)
 
-        val f: Future[ResultSet] = session.executeAsync(ins3)
+    val f: Future[ResultSet] = session.executeAsync(ins3)
 
-        f.recover{ case _ =>  None}
+    f.recover{ case _ =>  None}
 
-        val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
+    val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
 
-        Await.result(f1, Duration.Inf)
-
-        a.length
-    }
+    Await.result(f1, Duration.Inf)
+  }
 
   //
   def persistToCassandra = Flow[String].map { m =>
@@ -210,33 +210,30 @@ object Hl7MongoToCassandra {
 
   def logProgress = Flow[Seq[Int]].map { a =>
     val t = a.sum
-    // logger.info(s"Persisted $t messages")
+    logger.error(s"Persisted $t messages")
     t
   }
 
   def streamMongoToCassandra = {
     val o = getMongoSource
 
-    o match {
+    val t = o match {
       case Some(s) =>
-/*
         val r = s
           .via(messageToRaw)
           .filter(_ != null)
           .via(rawToCa)
           .filter(_ != None)
           .via(caToInsert)
-          // .mapConcat(identity)
+          .mapConcat(identity)
           .grouped(200)
-          .via(batch2)
-          .via(updateControl)
-          // .grouped(100000)
-          // .via(logProgress)
+          .via(batch)
+          // .via(updateControl)
+          .grouped(10000)
+          .via(logProgress)
           .runWith(Sink.head)
-*/
 
-        // TODO: Regardless of outcome.  Need to update date control.
-
+/*
         val r = s
           .via(messageToRaw)
           .filter(_ != null)
@@ -249,6 +246,7 @@ object Hl7MongoToCassandra {
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
+*/
 /*
         val r = s
           .via(messageToRaw)
@@ -262,6 +260,11 @@ object Hl7MongoToCassandra {
         Await.result(r, Duration.Inf)
       case _ => 0
     }
+
+    // Regardless of outcome.  Need to update date control.
+    updateControl
+
+    t
   }
 
   def runMongoToCassandra = {
