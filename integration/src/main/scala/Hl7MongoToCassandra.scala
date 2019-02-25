@@ -7,6 +7,7 @@ import java.util.Date
 import akka.actor.{ActorSystem, Scheduler}
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{Flow, Sink}
+import com.datastax.driver.core.ConsistencyLevel
 import com.eztier.hl7mock.types.CaTableDateControl
 
 import scala.concurrent.Promise
@@ -148,6 +149,8 @@ object Hl7MongoToCassandra {
     tup =>
       val stmts = tup.map(_._2)
       val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(stmts.asJava)
+        .setReadTimeoutMillis(300000)
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE)
 
       val f: Future[ResultSet] = session.executeAsync(batchStatement)
 
@@ -159,29 +162,6 @@ object Hl7MongoToCassandra {
 
       tup.length
   }
-
-  /*
-  // val batch2 = Flow[Seq[Seq[(Date, Insert)]]].mapAsync(parallelism = 10) {
-  val batch2 = Flow[Seq[Seq[(Date, Insert)]]].map {
-    ser =>
-      // logger.error(s"batch size ${ser.length}")
-      val tup = ser.flatten
-
-      val stmts = tup.map(_._2)
-      val batchStatement = new BatchStatement(BatchStatement.Type.UNLOGGED).addAll(stmts.asJava)
-
-      val f: Future[ResultSet] = session.executeAsync(batchStatement)
-
-      f.recover{ case _ =>  None}
-
-      val f1 = retry(f, Seq(1.seconds, 5.seconds, 10.seconds, 30.seconds, 60.seconds))
-
-      Await.result(f1, Duration.Inf)
-
-      // Future(tup.map(_._1))
-      tup.map(_._1)
-  }
-  */
 
   def retry[T](f: => Future[T], delays: Seq[FiniteDuration])(implicit ec: ExecutionContext): Future[T] = {
     f recoverWith { case _ if delays.nonEmpty => after(delays.head, scheduler)(retry(f, delays.tail)) }
@@ -224,7 +204,7 @@ object Hl7MongoToCassandra {
 
     o match {
       case Some(s) =>
-
+/*
         // 36556 in 2:40
         // 65854 in 4:40
         val r = s
@@ -239,8 +219,8 @@ object Hl7MongoToCassandra {
           .grouped(10000)
           .via(logProgress)
           .runWith(Sink.head)
+*/
 
-/*
         // 38342 in 2:27
         // 41822 in 2:40
         // 66270 in 4:04
@@ -256,7 +236,7 @@ object Hl7MongoToCassandra {
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
-*/
+
 /*
         val r = s
           .via(messageToRaw)
