@@ -224,7 +224,7 @@ object Hl7MongoToCassandra {
 
     o match {
       case Some(s) =>
-/*
+
         // 36556 in 2:40
         // 65854 in 4:40
         val r = s
@@ -239,7 +239,8 @@ object Hl7MongoToCassandra {
           .grouped(10000)
           .via(logProgress)
           .runWith(Sink.head)
-*/
+
+/*
         // 38342 in 2:27
         // 41822 in 2:40
         // 66270 in 4:04
@@ -255,6 +256,7 @@ object Hl7MongoToCassandra {
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
+*/
 /*
         val r = s
           .via(messageToRaw)
