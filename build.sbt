@@ -109,8 +109,8 @@ val circeGenericExtras = "io.circe" %% "circe-generic-extras" % "0.10.0"
 val circeJava8 = "io.circe" %% "circe-java8" % "0.11.1"
 
 // Cassandra
-val cassandraUdt = "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.20"
-val hl7cassandraAdapter =  "com.eztier" %% "hl7-cassandra-adapter-scala" % "0.3.11"
+val cassandraUdt = "com.eztier" %% "cassandra-udt-codec-helper-scala" % "0.2.21"
+val hl7cassandraAdapter =  "com.eztier" %% "hl7-cassandra-adapter-scala" % "0.3.12"
 
 // MongoDB
 val alpakkaMongoDB = "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "1.0-M2"
