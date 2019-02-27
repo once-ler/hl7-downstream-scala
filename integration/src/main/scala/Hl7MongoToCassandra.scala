@@ -248,15 +248,21 @@ object Hl7MongoToCassandra {
           .via(logProgress)
           .runWith(Sink.head)
 */
-        Await.result(r, Duration.Inf)
-      case _ => 0
+        val t = Await.result(r, Duration.Inf)
+        Some(t)
+      case _ => None
     }
   }
 
   def runMongoToCassandra = {
     var r: Int = 0
+    var t: Option[Int] = None
 
-    do (r = r + streamMongoToCassandra) while (r > 0)
+    do {
+      t = streamMongoToCassandra
+
+      r = r + t.getOrElse(0)
+    } while (t != None)
 
     r
   }

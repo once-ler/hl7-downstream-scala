@@ -6,6 +6,10 @@ import com.eztier.integration.hl7.CaPatientToCassandra._
 object Boot extends App {
   // val r = streamMongoToCassandra
   val r = runMongoToCassandra
+
+  println(r)
+
+  System.exit(0)
   // Should be 0 if there is nothing to process.
 
   // val r2 = streamCaPatientToCassandra
