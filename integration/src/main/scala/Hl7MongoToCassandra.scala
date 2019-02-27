@@ -212,6 +212,7 @@ object Hl7MongoToCassandra {
           .filter(_ != null)
           .via(rawToCa)
           .filter(_ != None)
+          .filter(_.get.Id != null)
           .via(caToInsert)
           .mapConcat(identity)
           .grouped(50)
@@ -230,13 +231,13 @@ object Hl7MongoToCassandra {
           .filter(_ != null)
           .via(rawToCa)
           .filter(_ != None)
+          .filter(_.get.Id != null)
           .via(caToInsert)
           .via(balancer(batch,100))
           .log("Persist")
           .grouped(100000)
           .via(logProgress)
           .runWith(Sink.head)
-
 /*
         val r = s
           .via(messageToRaw)
