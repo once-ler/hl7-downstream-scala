@@ -46,8 +46,11 @@ object CaPatientToCassandra {
   def streamCaPatientToCassandra = {
     val from = getLastCaPatientUploaded
     val to = from.plusHours(3).minusSeconds(1)
+    val now = LocalDateTime.now()
+    val adjToDt = if (to.isAfter(now)) now else to
+
     // runWithRowFilter() will query from ca_table_date_control and look for id "ca_hl_7"
-    val r = xaCaPatient.flow.runWithRowFilter(s"create_date >= '${from.toString}' and create_date < '${to.toString}'", 10)
+    val r = xaCaPatient.flow.runWithRowFilter(s"create_date >= '${from.toString}' and create_date < '${adjToDt.toString}'", 10)
     // Update date
     val f = CassandraCommandRuner.updateDate(to)
     val r2 = Await.result(f, 10 seconds)

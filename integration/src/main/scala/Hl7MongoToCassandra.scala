@@ -1,7 +1,7 @@
 package com.eztier.integration.hl7
 
 import java.time.format.DateTimeFormatter
-import java.time._
+import java.time.{LocalDateTime, _}
 import java.util.Date
 
 import akka.actor.{ActorSystem, Scheduler}
@@ -81,9 +81,11 @@ object Hl7MongoToCassandra {
   def getMongoSource = {
     val fromDt = getLastHl7MessageUploaded.atZone(ZoneId.systemDefault()).toLocalDateTime
     val toDt = fromDt.plusHours(3)
+    val now = LocalDateTime.now()
+    val adjToDt = if (toDt.isAfter(now)) now else toDt
 
     val from = fromDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
-    val to = toDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
+    val to = adjToDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
     // val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
 
     logger.error(s"Processing ${fromDt.toString} to ${toDt.toString}")
