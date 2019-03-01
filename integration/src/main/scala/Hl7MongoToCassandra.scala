@@ -88,9 +88,9 @@ object Hl7MongoToCassandra {
     val to = adjToDt.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli
     // val to = LocalDateTime.now.atZone(ZoneId.of("America/New_York")).toInstant.toEpochMilli
 
-    logger.error(s"Processing ${fromDt.toString} to ${toDt.toString}")
+    logger.error(s"Processing ${fromDt.toString} to ${adjToDt.toString}")
 
-    nextDate = Date.from(toDt.atZone(ZoneId.systemDefault()).toInstant)
+    nextDate = Date.from(adjToDt.atZone(ZoneId.systemDefault()).toInstant)
 
     // Regardless of outcome.  Need to update date control.
     updateControl(nextDate)
