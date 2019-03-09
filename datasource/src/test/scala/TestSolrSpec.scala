@@ -11,7 +11,10 @@ import akka.stream.alpakka.solr._
 import akka.stream.alpakka.solr.scaladsl.{SolrFlow, SolrSink, SolrSource}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.{ActorMaterializer, Materializer}
+import com.eztier.datasource.cassandra.dwh.implicits.Transactors.xaCaPatient
 import com.eztier.hl7mock.types.CaPatientControl
+
+import scala.concurrent.Await
 
 // import org.apache.solr.client.solrj.embedded.JettyConfig
 import org.apache.solr.client.solrj.impl.{CloudSolrClient, ZkClientClusterStateProvider}
@@ -79,6 +82,35 @@ class TestSolrSpec extends FunSpec with Matchers {
 
   // Stream should be from Cassandra Source[Tuple, NotUsed]
   val stream = getTupleStream(predefinedCollection)
+
+  val casStream = xaCaPatient.flow.casFlow.getSourceStream("select * from dwh.ca_patient_control", 200)
+
+  // Row to CaPatientControl
+  import com.eztier.hl7mock.CaPatientImplicits._
+
+  it("Should stream from cassandra to solr") {
+    val f = casStream
+      .map(a => rowToCaPatientControl(a))
+      .map(a => WriteMessage.createUpsertMessage(a))
+      .groupedWithin(5, 10.millis)
+      .via(
+        SolrFlow
+          .typeds[CaPatientControl](
+            predefinedCollection,
+            SolrUpdateSettings(),
+            binder = caPatientControlToDoc
+          )
+      )
+      .runWith(Sink.ignore)
+      // commit after stream ended
+      .map { done =>
+        solrClient.commit(predefinedCollection)
+        done
+      }(commitExecutionContext)
+
+    val r = Await.result(f, Duration.Inf)
+
+  }
 
   private def getTupleStream(collection: String): TupleStream = {
     //#tuple-stream
