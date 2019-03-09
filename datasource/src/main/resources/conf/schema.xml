@@ -49,19 +49,60 @@
     <fieldType name="plongs" class="solr.LongPointField" docValues="true" multiValued="true"/>
     <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
 
+    <fieldType name="text_en" class="solr.TextField" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EnglishPossessiveFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.EnglishPossessiveFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="false">
+        <analyzer type="index">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+            <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
+    <fieldType name="phonetic_en" class="solr.TextField" indexed="true" stored="false">
+        <analyzer>
+            <tokenizer class="solr.StandardTokenizerFactory"/>
+            <filter class="solr.DoubleMetaphoneFilterFactory" inject="false"/>
+        </analyzer>
+    </fieldType>
+
     <field name="_version_" type="long" indexed="true" stored="true"/>
-    <field name="city" type="string" docValues="city" multiValued="false" indexed="true" stored="true"/>
+    <field name="city" type="phonetic_en" docValues="false" multiValued="false" indexed="true" stored="true"/>
     <field name="dateOfBirth" type="date" docValues="true" multiValued="false" indexed="true" stored="true"/>
-    <field name="email" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="email" type="text_general" docValues="false" multiValued="false" indexed="true" stored="true"/>
     <field name="ethnicity" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="gender" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="mrn" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
-    <field name="name" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
-    <field name="phoneNumber" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
+    <field name="name" type="phonetic_en" docValues="false" multiValued="false" indexed="true" stored="true"/>
+    <field name="phoneNumber" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="postalCode" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="race" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="stateProvince" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
-    <field name="street" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
+    <field name="street" type="phonetic_en" docValues="false" multiValued="false" indexed="true" stored="true"/>
 
     <uniqueKey>mrn</uniqueKey>
 
