@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<schema name="test" version="1.6">
+<schema name="patient" version="1.6">
     <fieldType name="binary" class="solr.BinaryField"/>
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="booleans" class="solr.BoolField" sortMissingLast="true" multiValued="true"/>
@@ -50,9 +50,19 @@
     <fieldType name="pdoubles" class="solr.DoublePointField" docValues="true" multiValued="true"/>
 
     <field name="_version_" type="long" indexed="true" stored="true"/>
-    <field name="title" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
-    <field name="router" type="string" docValues="false" multiValued="false" indexed="false" stored="false"/>
-    <field name="comment" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
+    <field name="city" type="string" docValues="city" multiValued="false" indexed="true" stored="true"/>
+    <field name="dateOfBirth" type="date" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="email" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="ethnicity" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="gender" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="mrn" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="name" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="phoneNumber" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
+    <field name="postalCode" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="race" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="stateProvince" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
+    <field name="street" type="string" docValues="true" multiValued="false" indexed="false" stored="true"/>
 
-    <uniqueKey>title</uniqueKey>
+    <uniqueKey>mrn</uniqueKey>
+
 </schema>

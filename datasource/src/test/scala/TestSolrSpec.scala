@@ -41,8 +41,8 @@ class TestSolrSpec extends FunSpec with Matchers {
   final val dobDateFormat = new SimpleDateFormat(dobPattern)
 
   //#init-client
-  final val zookeeperPort = 9984
-  final val zookeeperHost = s"127.0.0.1:$zookeeperPort/solr"
+  final val zookeeperPort = 2181
+  final val zookeeperHost = s"127.0.0.1:$zookeeperPort"
   implicit val solrClient: CloudSolrClient =
     new CloudSolrClient.Builder(util.Arrays.asList(zookeeperHost), Optional.empty()).build
 
@@ -101,14 +101,19 @@ class TestSolrSpec extends FunSpec with Matchers {
             binder = caPatientControlToDoc
           )
       )
-      .runWith(Sink.ignore)
+      .runWith(Sink.seq)
       // commit after stream ended
-      .map { done =>
+      .map { seq =>
         solrClient.commit(predefinedCollection)
-        done
+        seq
       }(commitExecutionContext)
 
     val r = Await.result(f, Duration.Inf)
+    val b = r.forall(_.exists(_.status == 0))
+
+    println(r)
+
+    b should be (true)
 
   }
 
