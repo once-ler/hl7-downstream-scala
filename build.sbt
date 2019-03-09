@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.31",
+  version := "0.1.32",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -115,6 +115,9 @@ val hl7cassandraAdapter =  "com.eztier" %% "hl7-cassandra-adapter-scala" % "0.3.
 // MongoDB
 val alpakkaMongoDB = "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "1.0-M2"
 
+// Solr
+val alpakkaSolr = "com.lightbend.akka" %% "akka-stream-alpakka-solr" % "1.0-M3"
+
 lazy val datasource = project.
   settings(
     name := "datasource",
@@ -129,7 +132,8 @@ lazy val datasource = project.
       cassandraUdt,
       hl7cassandraAdapter,
       sqljdbc,
-      alpakkaMongoDB
+      alpakkaMongoDB,
+      alpakkaSolr
     )
   ).dependsOn(
     common
