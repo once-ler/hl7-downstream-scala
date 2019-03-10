@@ -69,6 +69,26 @@
         </analyzer>
     </fieldType>
 
+    <fieldType name="text_en_splitting" class="solr.TextField" autoGeneratePhraseQueries="true" positionIncrementGap="100">
+        <analyzer type="index">
+            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.WordDelimiterFilterFactory" catenateNumbers="1" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="1"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+        <analyzer type="query">
+            <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+            <filter class="solr.SynonymFilterFactory" expand="true" ignoreCase="true" synonyms="synonyms.txt"/>
+            <filter class="solr.StopFilterFactory" words="lang/stopwords_en.txt" ignoreCase="true"/>
+            <filter class="solr.WordDelimiterFilterFactory" catenateNumbers="0" generateNumberParts="1" splitOnCaseChange="1" generateWordParts="1" catenateAll="0" catenateWords="0"/>
+            <filter class="solr.LowerCaseFilterFactory"/>
+            <filter class="solr.KeywordMarkerFilterFactory" protected="protwords.txt"/>
+            <filter class="solr.PorterStemFilterFactory"/>
+        </analyzer>
+    </fieldType>
+
     <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="false">
         <analyzer type="index">
             <tokenizer class="solr.StandardTokenizerFactory"/>
@@ -103,6 +123,7 @@
     <field name="race" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="stateProvince" type="string" docValues="true" multiValued="false" indexed="true" stored="true"/>
     <field name="street" type="phonetic_en" docValues="false" multiValued="false" indexed="true" stored="true"/>
+    <field name="suggest" type="phonetic_en" docValues="false" multiValued="false" indexed="true" stored="true"/>
 
     <uniqueKey>mrn</uniqueKey>
 

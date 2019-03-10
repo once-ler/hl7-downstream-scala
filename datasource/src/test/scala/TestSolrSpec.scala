@@ -37,7 +37,7 @@ class TestSolrSpec extends FunSpec with Matchers {
 
   final val predefinedCollection = "patient"
 
-  final val dobPattern = "yyyy-MM-dd"
+  final val dobPattern = "yyyyMMdd"
   final val dobDateFormat = new SimpleDateFormat(dobPattern)
 
   //#init-client
@@ -60,6 +60,7 @@ class TestSolrSpec extends FunSpec with Matchers {
     doc.setField("race", b.Race)
     doc.setField("stateProvince", b.StateProvince)
     doc.setField("street", b.Street)
+    doc.setField("suggest", s"${b.Mrn} ${b.Name}${if (b.DateOfBirth != null) " " + dobDateFormat.format(b.DateOfBirth)}")
     doc
   }
 
