@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.33",
+  version := "0.1.34",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -183,7 +183,8 @@ lazy val http = project.
       akkaHttpCore,
       akkaHttpCirce,
       akkaHttpSprayJson,
-      akkaHttpTestkit
+      akkaHttpTestkit,
+      scalaTest
     )
   ).dependsOn(
     common,
