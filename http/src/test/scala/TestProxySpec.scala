@@ -71,34 +71,44 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
       implicit val materializer = ActorMaterializer()
       implicit val http = Http(system)
 
+      def handler(request: HttpRequest, formData: Option[FormData] = None) = {
+        val solr = "solr"
+
+        services.get(solr) match {
+          case Some(target) => {
+            val headersIn: Seq[HttpHeader] =
+              request.headers.filterNot(t => t.name() == "Host") :+
+                Host(target.host) :+
+                RawHeader("X-Fowarded-Host", solr) :+
+                RawHeader("X-Fowarded-Scheme", request.uri.scheme)
+
+            val a = request.method // HttpMethods.POST
+
+            val proxyRequest = request.copy(
+              uri = request.uri.copy(
+                scheme = target.scheme,
+                authority = Authority(host = Uri.NamedHost(target.host), port = target.port),
+                path = Path(request.uri.path.toString().replace("search", solr))
+              ),
+              headers = headersIn.toList,
+              entity = formData match {
+                case Some(a)  => a.toEntity
+                case _ => request.entity
+              }
+            )
+            val pr = proxyRequest
+            http.singleRequest(proxyRequest)
+          }
+          case None => Future.successful(NotFound(solr))
+        }
+      }
+
       val proxy = Route {
         path("search" / Remaining) { remaining =>
           get { context =>
             val request = context.request
 
-            // val host = extractHost(request)
-            val solr = "solr"
-
-            val f = services.get(solr) match {
-              case Some(target) => {
-                val headersIn: Seq[HttpHeader] =
-                  request.headers.filterNot(t => t.name() == "Host") :+
-                    Host(target.host) :+
-                    RawHeader("X-Fowarded-Host", solr) :+
-                    RawHeader("X-Fowarded-Scheme", request.uri.scheme)
-                val proxyRequest = request.copy(
-                  uri = request.uri.copy(
-                    scheme = target.scheme,
-                    authority = Authority(host = Uri.NamedHost(target.host), port = target.port),
-                    path = Path(request.uri.path.toString().replace("search", solr))
-                  ),
-                  headers = headersIn.toList
-                )
-                val pr = proxyRequest
-                http.singleRequest(proxyRequest)
-              }
-              case None => Future.successful(NotFound(solr))
-            }
+            val f = handler(request)
 
             context.complete(f)
 
@@ -106,7 +116,33 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
         }
       }
 
+      // q=*:*&rows=1
+      val proxy2 = extractRequest {
+        request =>
+          path("search" / Remaining) { remaining =>
+            post {
+              formField("suggest") { (suggest) => {
+                  val mod = suggest.split(' ').map("suggest:"+_).mkString(" AND ")
+                  val fd = FormData("q" -> mod, "rows" -> "10")
+
+                  val f = handler(request, Some(fd))
+
+                  complete(f)
+                }
+              }
+
+            }
+          }
+      }
+
       Get("/search/patient/select?q=city%3Abuen%20AND%20street%3A\"men%20st\"") ~> proxy ~> check {
+        val r = responseAs[String]
+
+        r.length should be > (0)
+      }
+
+      // miny should return Mouse, Minnie and mike should return Mouse, Mickey
+      Post("/search/patient/select", FormData("suggest" -> "miny 1928* 135*")) ~> proxy2 ~> check {
         val r = responseAs[String]
 
         r.length should be > (0)
