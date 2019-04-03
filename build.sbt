@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.35",
+  version := "0.1.36",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -117,6 +117,18 @@ val alpakkaMongoDB = "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "1.
 
 // Solr
 val alpakkaSolr = "com.lightbend.akka" %% "akka-stream-alpakka-solr" % "1.0-M3"
+
+/*
+// Oracle
+sbt> show unmanagedBase
+Place ojdbc8.jar and orai18n.jar: /apps/hl7-downstream-scala/datasource/lib
+
+To exclude from sbt-assembly:
+assemblyExcludedJars in assembly := {
+  val cp = (fullClasspath in assembly).value
+  cp filter {_.data.getName == "compile-0.1.0.jar"}
+}
+*/
 
 lazy val datasource = project.
   settings(

@@ -3,3 +3,4 @@
 .idea
 **/log
 **/*production.conf
+**/lib
