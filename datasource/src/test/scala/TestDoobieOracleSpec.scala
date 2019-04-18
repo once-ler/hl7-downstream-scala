@@ -30,7 +30,7 @@ import com.eztier.datasource.oracle.dwh.models.EmployeeImplicits._
 import com.eztier.datasource.oracle.dwh.implicits.Searchable._
 import com.eztier.datasource.oracle.dwh.implicits.Transactors._
 
-// sbt "project datasource" testOnly *TestDoobieMSSQLSpec
+// sbt "project datasource" testOnly *TestDoobieOracleSpec -- -z TIMESTAMP
 class TestDoobieOracleSpec extends FunSpec with Matchers {
 
   describe("Doobie ORACLE Suite") {
@@ -74,6 +74,31 @@ class TestDoobieOracleSpec extends FunSpec with Matchers {
         .check
         .unsafeRunSync
       // Fin Testing
+
+    }
+
+    it("Can support TIMESTAMP type") {
+      /*
+        NOTE: TIMESTAMP WITH LOCAL TIME ZONE results in UNKNOWN(-102) in doobie.
+
+        CREATE TABLE HR.TEST (STAT VARCHAR2(500) NOT NULL, DT TIMESTAMP NOT NULL);
+        INSERT INTO HR.TEST VALUES('FOO', CURRENT_TIMESTAMP);
+        SELECT to_char(DT, 'YYYY-MM-DD HH24:MI:SS.FF3') DT FROM HR.TEST WHERE rownum = 1;
+      */
+
+      // Must import custom implicit imap for Timestamp/LocalDateTime conversion.
+      import com.eztier.datasource.oracle.dwh.models.EmployeeImplicits._
+
+      val stmt = sql"SELECT STAT, DT FROM HR.TEST WHERE ROWNUM = 1"
+
+      val y = xa.yolo
+      import y._
+
+      stmt
+        .query[(String, LocalDateTime)]
+        // .check
+        .quick
+        .unsafeRunSync
 
     }
 
