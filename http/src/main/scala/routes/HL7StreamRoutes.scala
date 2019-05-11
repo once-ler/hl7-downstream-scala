@@ -47,8 +47,6 @@ object Hapi {
 }
 
 trait Hl7StreamRoutes {
-  // implicit val actorSystem: ActorSystem
-  // implicit val streamMaterializer: ActorMaterializer
   implicit val logger: LoggingAdapter
 
   lazy val httpHl7StreamingRoutes = streamingHl7Route
@@ -83,31 +81,33 @@ trait Hl7StreamRoutes {
     post {
       entity(as[String]) { rawString =>
 
-        val resp = Source.single(rawString)
+        extractExecutionContext { implicit executor =>
+          logger.debug(s"************************* Context: $executor")
+
+          val resp = Source.single(rawString)
           .via(persistAndGenerateAck)
           .log("ACK")
           .map(s => ByteString(s))
 
-        extractExecutionContext { implicit executor =>
           complete(HttpEntity(`text/plain(UTF-8)`, resp))
-        }
 
+        }
       }
     }
 
+  // https://doc.akka.io/docs/akka-http/current/routing-dsl/directives/basic-directives/withExecutionContext.html
   def streamingHl7Route = path("hl7") {
-    import com.eztier.rest.WebServer
-    val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
-
-    persistMethod
+    withExecutionContext(Routes.blockingDispatcher) {
+      persistMethod
+    }
   }
 
   // https://doc.akka.io/docs/akka-http/current/routing-dsl/path-matchers.html
   def streamingHl7AlternateRoute = path("dump" / Segments) {
-    import com.eztier.rest.WebServer
-    implicit val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
-
-    l => persistMethod
+    l =>
+      withExecutionContext(Routes.blockingDispatcher) {
+        persistMethod
+      }
   }
 
 }

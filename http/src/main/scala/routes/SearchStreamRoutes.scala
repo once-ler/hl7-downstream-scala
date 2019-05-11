@@ -35,9 +35,6 @@ import com.eztier.datasource.postgres.eventstore.models.CaPatientImplicits._
 case class Dummy(name: String)
 
 trait SearchStreamRoutes {
-  // implicit val actorSystem: ActorSystem
-  // implicit val streamMaterializer: ActorMaterializer
-
   lazy val httpStreamingRoutes = streamingJsonRoute
   lazy val httpInfoStreamingRoutes = streamingInfoRoute
   lazy val httpStreamingSearchRoutes = streamingSearchRoute
@@ -117,66 +114,70 @@ trait SearchStreamRoutes {
 
     path("log" / "wsi") {
 
-      import com.eztier.rest.WebServer
-      implicit val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
+      withExecutionContext(Routes.blockingDispatcher) {
 
-      post {
-        entity(as[ExecutionLogRange]) { p =>
-          
-          val resp = CommandRunner
-            .searchLog[ExecutionLogMini](p.toStore, p.fromDateTime, p.toDateTime)
+        post {
+          entity(as[ExecutionLogRange]) { p =>
+
+            val resp = CommandRunner
+              .searchLog[ExecutionLogMini](p.toStore, p.fromDateTime, p.toDateTime)
             // .throttle(elements = 100, per = 1 second, maximumBurst = 1, mode = ThrottleMode.Shaping)
-          
-          parameters('stream.?, 'format.?) { (stream, format) =>
-            format match {
-              case Some(a) if a == "html" =>
-                
-                val html = resp.zipWithIndex.map{ t =>
-                  val a = t._1
-                  val i = t._2
-                  
-                  ByteString(s"""<tr>
-                  |<td>${i.toString()}</td>
-                  |<td>${a.StartTime.toString()}</td>
-                  |<td>${a.FromStore}</td>
-                  |<td>${a.ToStore}</td>
-                  |<td>${a.StudyId}</td>
-                  |<td">${a.WSI}</td>
-                  |<td">${a.Caller}</td>
-                  |<td">${a.Response}</td>
-                  |</tr>""".stripMargin.replaceAll("\n", "") + "\n")
-                }
 
-                complete(HttpEntity(`text/csv(UTF-8)`, html))
-              case _ =>
-                stream match {
-                  case Some(a) =>
-                    if (a == "1") {
-                      val newline = ByteString("\n")
-                      implicit val jsonStreamingSupport = EntityStreamingSupport.json()
-                        .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
+            parameters('stream.?, 'format.?) { (stream, format) =>
+              format match {
+                case Some(a) if a == "html" =>
 
-                      complete(resp)
-                    } else complete(resp)
-                  case _ => complete(resp)
-                }
+                  val html = resp.zipWithIndex.map { t =>
+                    val a = t._1
+                    val i = t._2
+
+                    ByteString(
+                      s"""<tr>
+                         |<td>${i.toString()}</td>
+                         |<td>${a.StartTime.toString()}</td>
+                         |<td>${a.FromStore}</td>
+                         |<td>${a.ToStore}</td>
+                         |<td>${a.StudyId}</td>
+                         |<td">${a.WSI}</td>
+                         |<td">${a.Caller}</td>
+                         |<td">${a.Response}</td>
+                         |</tr>""".stripMargin.replaceAll("\n", "") + "\n")
+                  }
+
+                  complete(HttpEntity(`text/csv(UTF-8)`, html))
+                case _ =>
+                  stream match {
+                    case Some(a) =>
+                      if (a == "1") {
+                        val newline = ByteString("\n")
+                        implicit val jsonStreamingSupport = EntityStreamingSupport.json()
+                          .withFramingRenderer(Flow[ByteString].map(bs => bs ++ newline))
+
+                        complete(resp)
+                      } else complete(resp)
+                    case _ => complete(resp)
+                  }
+              }
             }
           }
-        }
 
+        }
       }
     }
   }
 
   def streamingSearchAggregationLogRoute = {
     path("log" / "agg") {
-      get {
-        val q = "select symbol, date, price from ril.wsi_execution_error_agg"
+      withExecutionContext(Routes.blockingDispatcher) {
 
-        val resp = CommandRunner
-          .adhoc[ExecutionAggregationLog](q)
+        get {
+          val q = "select symbol, date, price from ril.wsi_execution_error_agg"
 
-        complete(resp)
+          val resp = CommandRunner
+            .adhoc[ExecutionAggregationLog](q)
+
+          complete(resp)
+        }
       }
     }
   }
