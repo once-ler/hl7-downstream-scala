@@ -1,21 +1,13 @@
 package com.eztier.rest.routes
 
-// import java.util.UUID
-
 import akka.actor.ActorSystem
-// import akka.http.scaladsl.common
-// import akka.http.scaladsl.common.EntityStreamingSupport
 import akka.http.scaladsl.model.ContentTypes._
 import akka.http.scaladsl.model.HttpEntity
 import akka.http.scaladsl.server.Directives._
 import akka.stream.FlowShape
-import akka.stream.scaladsl.{Flow, Source, Broadcast, ZipWith, GraphDSL}
+import akka.stream.scaladsl.{Broadcast, Flow, GraphDSL, Source, ZipWith}
 import akka.stream.{ActorMaterializer, ThrottleMode}
 import akka.util.ByteString
-
-import scala.concurrent.ExecutionContext
-// import scala.concurrent.duration._
-
 import java.io.{PrintWriter, StringWriter}
 
 import akka.event.LoggingAdapter
@@ -23,6 +15,8 @@ import ca.uhn.hl7v2.{DefaultHapiContext, HL7Exception}
 import ca.uhn.hl7v2.model.Message
 import ca.uhn.hl7v2.parser.{CanonicalModelClassFactory, EncodingNotSupportedException}
 import ca.uhn.hl7v2.validation.impl.NoValidation
+
+import scala.concurrent.ExecutionContext
 
 object Hapi {
   private val pipeParser = {
@@ -53,9 +47,8 @@ object Hapi {
 }
 
 trait Hl7StreamRoutes {
-  implicit val actorSystem: ActorSystem
-  implicit val streamMaterializer: ActorMaterializer
-  implicit val executionContext: ExecutionContext
+  // implicit val actorSystem: ActorSystem
+  // implicit val streamMaterializer: ActorMaterializer
   implicit val logger: LoggingAdapter
 
   lazy val httpHl7StreamingRoutes = streamingHl7Route
@@ -75,7 +68,7 @@ trait Hl7StreamRoutes {
   }
 
   def persistAndGenerateAck = GraphDSL.create() { implicit b =>
-      import GraphDSL.Implicits._
+    import GraphDSL.Implicits._
 
       val bcast = b.add(Broadcast[String](2))
       val zip = b.add(ZipWith[String, Int, String]((ack: String, count: Int) => ack))
@@ -92,15 +85,29 @@ trait Hl7StreamRoutes {
 
         val resp = Source.single(rawString)
           .via(persistAndGenerateAck)
+          .log("ACK")
           .map(s => ByteString(s))
 
-        complete(HttpEntity(`text/plain(UTF-8)`, resp))
+        extractExecutionContext { implicit executor =>
+          complete(HttpEntity(`text/plain(UTF-8)`, resp))
+        }
+
       }
     }
 
-  def streamingHl7Route = path("hl7") { persistMethod }
+  def streamingHl7Route = path("hl7") {
+    import com.eztier.rest.WebServer
+    val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
+
+    persistMethod
+  }
 
   // https://doc.akka.io/docs/akka-http/current/routing-dsl/path-matchers.html
-  def streamingHl7AlternateRoute = path("dump" / Segments) { l => persistMethod }
+  def streamingHl7AlternateRoute = path("dump" / Segments) {
+    import com.eztier.rest.WebServer
+    implicit val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
+
+    l => persistMethod
+  }
 
 }

@@ -13,7 +13,7 @@ import akka.util.ByteString
 // akka execution context
 import akka.stream.scaladsl.{Flow, Source, Sink}
 import akka.stream.{ActorMaterializer, ThrottleMode}
-import scala.concurrent.ExecutionContext
+// import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 // akka-http-circe
@@ -35,9 +35,8 @@ import com.eztier.datasource.postgres.eventstore.models.CaPatientImplicits._
 case class Dummy(name: String)
 
 trait SearchStreamRoutes {
-  implicit val actorSystem: ActorSystem
-  implicit val streamMaterializer: ActorMaterializer
-  implicit val executionContext: ExecutionContext
+  // implicit val actorSystem: ActorSystem
+  // implicit val streamMaterializer: ActorMaterializer
 
   lazy val httpStreamingRoutes = streamingJsonRoute
   lazy val httpInfoStreamingRoutes = streamingInfoRoute
@@ -117,6 +116,10 @@ trait SearchStreamRoutes {
   def streamingSearchLogRoute = {
 
     path("log" / "wsi") {
+
+      import com.eztier.rest.WebServer
+      implicit val blockingDispatcher = WebServer.actorSystem.dispatchers.lookup("blocking-dispatcher")
+
       post {
         entity(as[ExecutionLogRange]) { p =>
           
