@@ -58,8 +58,8 @@ object CommandRunner {
     Source.single(src)
   }
 
-  def create[A](primaryKeys: List[String], schema: String = "hl7")(implicit creatable: Creatable[A], typeTag: TypeTag[A]) = {
-    val io = creatable.create(primaryKeys, schema)
+  def create[A](primaryKeys: List[String], schema: String = "hl7", useSchemaTablespace: Boolean = false)(implicit creatable: Creatable[A], typeTag: TypeTag[A]) = {
+    val io = creatable.create(primaryKeys, schema, useSchemaTablespace)
 
     val src = tryRunIO(io)
 
