@@ -57,22 +57,24 @@ trait Creatable[A] {
 }
 
 object Searchable {
+
   implicit object PatientSearch extends Searchable[Patient] {
     override def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[Patient]] = {
-      
+
       // https://tpolecat.github.io/doobie/docs/17-FAQ.html#how-do-i-turn-an-arbitrary-sql-string-into-a-query0update0
-      val stmt = fr"""select * from """ ++ Fragment(schema, None) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", None) ++ fr""" limit 10"""
+      val stmt =
+        fr"""select * from """ ++ Fragment(schema, None) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", None) ++ fr""" limit 10"""
 
       // Testing
       val y = xa.yolo
       import y._
-      
+
       stmt
         .query[Patient]
         .check
         .unsafeRunSync
       // Fin Testing
-      
+
       stmt
         .query[Patient]
         .stream
@@ -84,7 +86,7 @@ object Searchable {
 
   implicit object CaPatientSearch extends Searchable[CaPatient] {
     override def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[CaPatient]] = {
-      
+
       val stmt = fr"""select current from """ ++ Fragment(schema, None) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", None) ++ fr""" limit 10"""
       stmt
         .query[CaPatient]
@@ -94,6 +96,7 @@ object Searchable {
         .transact(xa)
     }
   }
+
 }
 
 object SearchableLog {
@@ -176,6 +179,20 @@ object AdHocable {
         .compile
         .to[List]
         .transact(xa)
+    }
+  }
+
+  implicit object VersionControlAdhoc extends AdHocable[VersionControl] {
+    override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[VersionControl]] = {
+
+      val stmt = Fragment(sqlstring, None)
+      stmt
+        .query[VersionControl]
+        .stream
+        .compile
+        .to[List]
+        .transact(xa)
+
     }
   }
 
