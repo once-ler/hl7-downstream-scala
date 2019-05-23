@@ -61,7 +61,7 @@ trait Hl7StreamRoutes {
   }
 
   def persist = Flow[String].map { s => 
-    Thread.sleep(500)
+    Thread.sleep(50)
     1 
   }
 

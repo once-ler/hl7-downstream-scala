@@ -7,6 +7,7 @@ import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
 
+import com.eztier.datasource.postgres.eventstore.models.VersionControl
 import com.eztier.datasource.common.runners.{CommandRunner => CommandRunnerCommon}
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 import com.eztier.hl7mock.types.CaPatient
@@ -143,6 +144,34 @@ class TestDoobieSpec extends FunSpec with Matchers {
     val r1 = Await.result(g, 500 millis)
 
     r1.foreach(println(_))
+  }
+
+  it("Create VersionControl table") {
+    val f = CommandRunner.create(List("model", "subscriber"), "hl7", false)
+      .runWith(Sink.seq)
+
+    val r1 = Await.result(f, 500 millis)
+    println(r1)
+  }
+
+  it("Can update VersionControl table") {
+    val c = VersionControl("some_model", "awesome_app", LocalDateTime.now())
+    val h1 = CommandRunner.update(c, "hl7")
+      .runWith(Sink.head)
+
+    val r = Await.result(h1, 500 millis)
+    r should be (1)
+  }
+
+  it("Can fetch VersionControl table") {
+    val g = CommandRunner.adhoc[VersionControl](s"""select
+      model, subscriber, start_time from hl7.version_control
+      where model = 'some_model' and subscriber = 'awesome_app' limit 1""")
+      .runWith(Sink.seq)
+
+    val r = Await.result(g, 500 millis).headOption
+
+    r should not be (None)
   }
 
 /*

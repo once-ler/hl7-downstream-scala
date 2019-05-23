@@ -225,7 +225,7 @@ object Updatable {
     override def update(a: VersionControl, schema: String = "hl7")
     (implicit xa: Transactor[IO], typeTag: TypeTag[VersionControl]): IO[Int] = {
 
-      type VersionControlRow = (String, String, Date)
+      type VersionControlRow = (String, String, LocalDateTime)
 
       val row = (a.model, a.subscriber, a.startTime)
       val tname = camelToUnderscores(typeTag.tpe.typeSymbol.name.toString)
