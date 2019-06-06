@@ -118,6 +118,9 @@ val alpakkaMongoDB = "com.lightbend.akka" %% "akka-stream-alpakka-mongodb" % "1.
 // Solr
 val alpakkaSolr = "com.lightbend.akka" %% "akka-stream-alpakka-solr" % "1.0-M3"
 
+// csv
+val alpakkaCsv = "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "1.0.2"
+
 /*
 // Oracle
 sbt> show unmanagedBase
@@ -145,7 +148,8 @@ lazy val datasource = project.
       hl7cassandraAdapter,
       sqljdbc,
       alpakkaMongoDB,
-      alpakkaSolr
+      alpakkaSolr,
+      alpakkaCsv
     )
   ).dependsOn(
     common
