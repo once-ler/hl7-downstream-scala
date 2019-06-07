@@ -25,7 +25,7 @@ object CsvToCassandra extends WithCsvSuppport {
           val f = xaCaHl7.flow.runWithRawStringSource(a, 20)
           Await.result(f, Duration.Inf)
       }
-      .runWith(Sink.head)
+      .runFold(0){_ + _}
 
     val f2 = s.grouped(100)
       .map{
@@ -34,7 +34,7 @@ object CsvToCassandra extends WithCsvSuppport {
           val f = xaCaPatient.flow.runWithRawStringSource(a, 20)
           Await.result(f, Duration.Inf)
       }
-      .runWith(Sink.head)
+      .runFold(0){_ + _}
 
     val result = for {
       r <- f
