@@ -4,13 +4,13 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
 
 import akka.NotUsed
-import akka.stream.Materializer
+import akka.stream.{IOResult, Materializer}
 import akka.stream.alpakka.csv.scaladsl.CsvFormatting.{Backslash, Comma, DoubleQuote}
 import akka.stream.alpakka.csv.scaladsl.{CsvFormatting, CsvParsing, CsvQuotingStyle, CsvToMap}
 import akka.stream.scaladsl.{FileIO, Flow, Framing, Keep, Sink, Source}
 import akka.util.ByteString
 
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration._
 import scala.collection.immutable
 
@@ -51,7 +51,7 @@ trait WithCsvSuppport {
     Await.result(f, Duration.Inf).mkString("")
   }
 
-  def importAsText(filePathAndName: String)(implicit rc: ExecutionContext, materializer: Materializer): Source[String, NotUsed] = {
+  def importAsText(filePathAndName: String)(implicit rc: ExecutionContext, materializer: Materializer): Source[String, Future[IOResult]] = {
     val workingDir = System.getProperty("user.dir")
     val file = Paths.get(s"$workingDir/$filePathAndName")
 
