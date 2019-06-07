@@ -1,4 +1,4 @@
-package package com.eztier.datasource.common.traits
+package com.eztier.datasource.common.traits
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
