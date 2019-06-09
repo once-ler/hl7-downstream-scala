@@ -6,9 +6,12 @@ import akka.http.scaladsl.model.{ContentTypes, FormData, HttpEntity, HttpHeader,
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
 import akka.http.scaladsl.server.Directives.{complete, extractRequest, formField, formFieldMap, get, path, post}
 import akka.http.scaladsl.server._
+// Collects all default directives into one trait for simple importing.
 import Directives._
-import com.eztier.rest.WebServer._
 import io.circe.Json
+import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+
+import com.eztier.rest.WebServer._
 
 import scala.concurrent.Future
 
@@ -40,7 +43,9 @@ trait ProxyRoutes {
   )
 
   val services: Map[String, Target] = Map(
-    "solr" -> Target("http://localhost:8983")
+    "solr" -> Target("http://localhost:8983"),
+    "reddit" -> Target("https://www.reddit.com"),
+    "pubmed" -> Target("https://eutils.ncbi.nlm.nih.gov")
   )
 
   def extractHost(request: HttpRequest): String = request.header[Host].map(_.host.address()).getOrElse("--")
@@ -79,56 +84,70 @@ trait ProxyRoutes {
     }
   }
 
-  val proxy = Route {
-    path("search" / Remaining) { remaining =>
-      withExecutionContext(Routes.blockingDispatcher) {
-        get { context =>
-          val request = context.request
+  val proxy =
+    handleRejections(corsRejectionHandler) {
+      cors() {
+        Route {
+          path("search" / Remaining) { remaining =>
+            withExecutionContext(Routes.blockingDispatcher) {
+              get { context =>
+                val request = context.request
 
-          val f = handler(request)
+                val f = handler(request)
 
-          context.complete(f)
-        }
-      }
-    }
-  }
-
-  // q=*:*&rows=1
-  val proxy2 = extractRequest {
-    request =>
-      path("search" / Remaining) { remaining =>
-        withExecutionContext(Routes.blockingDispatcher) {
-
-          post {
-            formField("suggest") { (suggest) => {
-              val mod = suggest.split(' ').map("suggest:" + _).mkString(" AND ")
-              val fd = FormData("q" -> mod, "rows" -> "10")
-
-              val f = handler(request, Some(fd))
-
-              complete(f)
+                context.complete(f)
+              }
             }
           }
         }
       }
     }
-  }
 
-  val proxy3 = extractRequest { request =>
-    path("search" / Remaining) { remaining =>
-      withExecutionContext(Routes.blockingDispatcher) {
-        post {
-          formFieldMap { fields =>
-            val mod = fields.map(a => s"${a._1}:${a._2}").mkString(" AND ")
-            val fd = FormData("q" -> mod, "rows" -> "10")
+  // q=*:*&rows=1
+  val proxy2 =
+    handleRejections(corsRejectionHandler) {
+      cors() {
+        extractRequest { request =>
+            path("search" / Remaining) { remaining =>
+              withExecutionContext(Routes.blockingDispatcher) {
 
-            val f = handler(request, Some(fd))
+                post {
+                  formField("suggest") { (suggest) => {
+                    val mod = suggest.split(' ').map("suggest:" + _).mkString(" AND ")
+                    val fd = FormData("q" -> mod, "rows" -> "10")
 
-            complete(f)
+                    val f = handler(request, Some(fd))
+
+                    complete(f)
+                  }
+                }
+              }
+            }
           }
         }
       }
     }
-  }
+
+  val proxy3 =
+    handleRejections(corsRejectionHandler) {
+      cors() {
+        extractRequest { request =>
+          path("search" / Remaining) { remaining =>
+            withExecutionContext(Routes.blockingDispatcher) {
+              post {
+                formFieldMap { fields =>
+                  val mod = fields.map(a => s"${a._1}:${a._2}").mkString(" AND ")
+                  val fd = FormData("q" -> mod, "rows" -> "10")
+
+                  val f = handler(request, Some(fd))
+
+                  complete(f)
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
 }

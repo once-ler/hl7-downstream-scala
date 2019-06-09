@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.43",
+  version := "0.1.44",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -93,7 +93,7 @@ val akkaHttpTestkit = akka %% "akka-http-testkit" % akkaHttpV % Test
 val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % "1.22.0"
 
 // Support of CORS requests, version depends on akka-http
-// val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.3.0"
+val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.3.0"
 
 // PostgreSQL
 val doobie = "org.tpolecat" %% "doobie-core"      % "0.6.0"
@@ -129,7 +129,7 @@ Place ojdbc8.jar and orai18n.jar: /apps/hl7-downstream-scala/datasource/lib
 To exclude from sbt-assembly:
 assemblyExcludedJars in assembly := {
   val cp = (fullClasspath in assembly).value
-  cp filter {_.data.getName == "compile-0.1.0.jar"}
+  cp filter {x => x.data.getName.matches("ojdbc*") || x.data.getName.matches("orai18n*")}
 }
 */
 
@@ -199,6 +199,7 @@ lazy val http = project.
       akkaHttpCore,
       akkaHttpCirce,
       akkaHttpSprayJson,
+      akkaHttpCors,
       akkaHttpTestkit,
       scalaTest
     )

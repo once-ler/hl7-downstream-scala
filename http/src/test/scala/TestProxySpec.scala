@@ -1,16 +1,18 @@
 package com.eztier.http.test
 
+import java.net.InetSocketAddress
+
 import org.scalatest.{FunSpec, Matchers}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.http.scaladsl.server._
 import Directives._
 import akka.actor.ActorSystem
-import akka.http.scaladsl.Http
+import akka.http.scaladsl.{ClientTransport, Http}
 import akka.http.scaladsl.model.Uri.{Authority, Path}
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{Host, RawHeader}
+import akka.http.scaladsl.settings.{ClientConnectionSettings, ConnectionPoolSettings}
 import akka.stream.ActorMaterializer
-
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.syntax._
@@ -59,7 +61,9 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
     )
 
     val services: Map[String, Target] = Map(
-      "solr" -> Target("http://localhost:8983")
+      "solr" -> Target("http://localhost:8983"),
+      "reddit" -> Target("https://www.reddit.com"),
+      "pubmed" -> Target("https://eutils.ncbi.nlm.nih.gov")
     )
 
     def extractHost(request: HttpRequest): String = request.header[Host].map(_.host.address()).getOrElse("--")
@@ -71,24 +75,43 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
       implicit val materializer = ActorMaterializer()
       implicit val http = Http(system)
 
-      def handler(request: HttpRequest, formData: Option[FormData] = None) : Future[HttpResponse] = {
-        val solr = "solr"
+      /*
+      val proxyHost = "localhost"
+      val proxyPort = 8888
 
-        services.get(solr) match {
+      val httpsProxyTransport = ClientTransport.httpsProxy(InetSocketAddress.createUnresolved(proxyHost, proxyPort))
+
+      val settings = ConnectionPoolSettings(system)
+        .withConnectionSettings(ClientConnectionSettings(system)
+          .withTransport(httpsProxyTransport))
+      */
+
+      def handler(request: HttpRequest, formData: Option[FormData] = None, service: String = "solr") : Future[HttpResponse] = {
+
+        services.get(service) match {
           case Some(target) => {
             val headersIn: Seq[HttpHeader] =
               request.headers.filterNot(t => t.name() == "Host") :+
                 Host(target.host) :+
-                RawHeader("X-Fowarded-Host", solr) :+
+                RawHeader("X-Fowarded-Host", service) :+
                 RawHeader("X-Fowarded-Scheme", request.uri.scheme)
 
             val a = request.method // HttpMethods.POST
+            val b = request.uri.path.toString()
 
             val proxyRequest = request.copy(
               uri = request.uri.copy(
                 scheme = target.scheme,
                 authority = Authority(host = Uri.NamedHost(target.host), port = target.port),
-                path = Path(request.uri.path.toString().replace("search", solr))
+                path = service match {
+                  case "solr" =>
+                    Path(b.replace("search", service))
+                  case "reddit" =>
+                    Path(b.replace("/api/reddit", "/search.json"))
+                  case _ =>
+                    //TODO: other cases
+                    Path(b)
+                }
               ),
               headers = headersIn.toList,
               entity = formData match {
@@ -98,8 +121,10 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
             )
             val pr = proxyRequest
             http.singleRequest(proxyRequest)
+
+            // val r = Http().outgoingConnectionHttps("reddit.com", 443)
           }
-          case None => Future.successful(NotFound(solr))
+          case None => Future.successful(NotFound(service))
         }
       }
 
@@ -150,6 +175,30 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
           }
         }
 
+      val proxy4 = extractRequest {
+        request =>
+          path("api/reddit" / Remaining) { remaining =>
+            post {
+              formField("suggest") { (suggest) => {
+                val fd = FormData(
+                  "q" -> s"subreddit:$suggest",
+                  "syntax" -> "plain",
+                  "restrict_sr" -> "false",
+                  "include_facets" -> "false",
+                  "limit" -> "10",
+                  "sr_detail"->"false"
+                )
+
+                val f = handler(request, Some(fd))
+
+                complete(f)
+              }
+            }
+
+          }
+        }
+      }
+
       Get("/search/patient/select?q=city%3Abuen%20AND%20street%3A\"men%20st\"") ~> proxy ~> check {
         val r = responseAs[String]
 
@@ -164,6 +213,12 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
       }
 
       Post("/search/interface_logging/select", FormData("from_store" -> "epic", "study_id" -> "ABC*")) ~> proxy3 ~> check {
+        val r = responseAs[String]
+
+        r.length should be > (0)
+      }
+
+      Post("/api/reddit", FormData("suggest" -> "spiderman far from home")) ~> proxy4 ~> check {
         val r = responseAs[String]
 
         r.length should be > (0)
