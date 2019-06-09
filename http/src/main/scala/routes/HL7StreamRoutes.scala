@@ -16,8 +16,6 @@ import ca.uhn.hl7v2.model.Message
 import ca.uhn.hl7v2.parser.{CanonicalModelClassFactory, EncodingNotSupportedException}
 import ca.uhn.hl7v2.validation.impl.NoValidation
 
-import scala.concurrent.ExecutionContext
-
 object Hapi {
   private val pipeParser = {
     val hapiContext = new DefaultHapiContext()

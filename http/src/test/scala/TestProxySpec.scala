@@ -71,7 +71,7 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
       implicit val materializer = ActorMaterializer()
       implicit val http = Http(system)
 
-      def handler(request: HttpRequest, formData: Option[FormData] = None) = {
+      def handler(request: HttpRequest, formData: Option[FormData] = None) : Future[HttpResponse] = {
         val solr = "solr"
 
         services.get(solr) match {
@@ -111,7 +111,6 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
             val f = handler(request)
 
             context.complete(f)
-
           }
         }
       }
@@ -135,6 +134,22 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
           }
       }
 
+      val proxy3 = extractRequest {
+        request =>
+          path("search" / Remaining) { remaining =>
+            post {
+              formFieldMap { fields =>
+                val mod = fields.map(a => s"${a._1}:${a._2}").mkString(" AND ")
+                val fd = FormData("q" -> mod, "rows" -> "10")
+
+                val f = handler(request, Some(fd))
+
+                complete(f)
+              }
+            }
+          }
+        }
+
       Get("/search/patient/select?q=city%3Abuen%20AND%20street%3A\"men%20st\"") ~> proxy ~> check {
         val r = responseAs[String]
 
@@ -143,6 +158,12 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
 
       // miny should return Mouse, Minnie and mike should return Mouse, Mickey
       Post("/search/patient/select", FormData("suggest" -> "miny 1928* 135*")) ~> proxy2 ~> check {
+        val r = responseAs[String]
+
+        r.length should be > (0)
+      }
+
+      Post("/search/interface_logging/select", FormData("from_store" -> "epic", "study_id" -> "ABC*")) ~> proxy3 ~> check {
         val r = responseAs[String]
 
         r.length should be > (0)
