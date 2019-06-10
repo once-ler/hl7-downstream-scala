@@ -28,6 +28,6 @@ object Routes extends SearchStreamRoutes with StaticRoutes with Hl7StreamRoutes 
                       httpHl7AlternateStreamingRoutes ~
                         httpProxyRoute ~
                           httpProxyRoute2 ~
-                            httpProxyRoute3
-
+                            httpProxyRoute3 ~
+                              httpProxyRoute4
 }

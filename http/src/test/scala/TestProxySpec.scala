@@ -94,7 +94,6 @@ class TestProxySpec extends FunSpec with Matchers with ScalatestRouteTest {
                 RawHeader("X-Fowarded-Host", service) :+
                 RawHeader("X-Fowarded-Scheme", request.uri.scheme)
 
-            // val a = request.method // HttpMethods.POST
             val b = request.uri.path.toString()
 
             val proxyRequest = request.copy(

@@ -36,6 +36,7 @@ trait ProxyRoutes {
   lazy val httpProxyRoute = proxy
   lazy val httpProxyRoute2 = proxy2
   lazy val httpProxyRoute3 = proxy3
+  lazy val httpProxyRoute4 = proxy4
 
   def NotFound(path: String) = HttpResponse(
     404,
@@ -44,32 +45,36 @@ trait ProxyRoutes {
 
   val services: Map[String, Target] = Map(
     "solr" -> Target("http://localhost:8983"),
-    "reddit" -> Target("https://www.reddit.com"),
-    "pubmed" -> Target("https://eutils.ncbi.nlm.nih.gov")
+    "reddit" -> Target("https://www.reddit.com:443"),
+    "pubmed" -> Target("https://eutils.ncbi.nlm.nih.gov:443")
   )
 
   def extractHost(request: HttpRequest): String = request.header[Host].map(_.host.address()).getOrElse("--")
 
-  def handler(request: HttpRequest, formData: Option[FormData] = None) : Future[HttpResponse] = {
-    implicit val http = Http(actorSystem)
+  implicit val http = Http(actorSystem)
 
-    val solr = "solr"
+  def handler(request: HttpRequest, formData: Option[FormData] = None, service: String = "solr") : Future[HttpResponse] = {
 
-    services.get(solr) match {
+    services.get(service) match {
       case Some(target) => {
         val headersIn: Seq[HttpHeader] =
           request.headers.filterNot(t => t.name() == "Host") :+
             Host(target.host) :+
-            RawHeader("X-Fowarded-Host", solr) :+
+            RawHeader("X-Fowarded-Host", service) :+
             RawHeader("X-Fowarded-Scheme", request.uri.scheme)
 
-        val a = request.method // HttpMethods.POST
+        val b = request.uri.path.toString()
 
         val proxyRequest = request.copy(
           uri = request.uri.copy(
             scheme = target.scheme,
             authority = Authority(host = Uri.NamedHost(target.host), port = target.port),
-            path = Path(request.uri.path.toString().replace("search", solr))
+            path = service match {
+              case "solr" =>
+                Path(b.replace("search", service))
+              case _ =>
+                Path(b.replace(s"/api/$service", ""))
+            }
           ),
           headers = headersIn.toList,
           entity = formData match {
@@ -80,7 +85,7 @@ trait ProxyRoutes {
         val pr = proxyRequest
         http.singleRequest(proxyRequest)
       }
-      case None => Future.successful(NotFound(solr))
+      case None => Future.successful(NotFound(service))
     }
   }
 
@@ -144,6 +149,23 @@ trait ProxyRoutes {
                   complete(f)
                 }
               }
+            }
+          }
+        }
+      }
+    }
+
+  val proxy4 =
+    handleRejections(corsRejectionHandler) {
+      cors() {
+        Route {
+          path("api" / Segment / Remaining) { (segment, remaining) =>
+            get { context =>
+              val request = context.request
+
+              val f = handler(request, None, segment)
+
+              context.complete(f)
             }
           }
         }
