@@ -1,5 +1,7 @@
 package com.eztier.rest.routes
 
+import java.nio.charset.StandardCharsets
+
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.Uri.{Authority, Path}
 import akka.http.scaladsl.model.{ContentTypes, FormData, HttpEntity, HttpHeader, HttpProtocol, HttpProtocols, HttpRequest, HttpResponse, Uri}
@@ -10,10 +12,10 @@ import akka.http.scaladsl.server._
 import Directives._
 import io.circe.Json
 import ch.megard.akka.http.cors.scaladsl.CorsDirectives._
+import scala.concurrent.Future
 
 import com.eztier.rest.WebServer._
-
-import scala.concurrent.Future
+import com.eztier.common.Configuration.{env, conf}
 
 object ProxyModels {
   case class Target(scheme: String, host: String, port: Int, weight: Int = 1, protocol: HttpProtocol = HttpProtocols.`HTTP/1.1`) {
@@ -27,6 +29,15 @@ object ProxyModels {
         case _ => throw new RuntimeException(s"Bad target: $url")
       }
     }
+  }
+
+  object SolrCloud {
+    val cfg = conf.getConfig(s"$env.solr")
+    val url = cfg.getString("url")
+    val user = cfg.getString("user")
+    val password = cfg.getString("password")
+    val authorizationHeader = RawHeader("authorization",
+      java.util.Base64.getEncoder.encodeToString(s"Basic ${user}:${password}".getBytes(StandardCharsets.UTF_8)))
   }
 }
 
@@ -57,11 +68,19 @@ trait ProxyRoutes {
 
     services.get(service) match {
       case Some(target) => {
-        val headersIn: Seq[HttpHeader] =
+        val solrHeaders: Seq[HttpHeader] =
+          service match {
+            case "solr" => Seq(SolrCloud.authorizationHeader)
+            case _ => Seq.empty
+          }
+
+        val headersForward: Seq[HttpHeader] =
           request.headers.filterNot(t => t.name() == "Host") :+
             Host(target.host) :+
             RawHeader("X-Fowarded-Host", service) :+
             RawHeader("X-Fowarded-Scheme", request.uri.scheme)
+
+        val headersIn = headersForward ++ solrHeaders
 
         val b = request.uri.path.toString()
 
