@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.45",
+  version := "0.1.46",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -133,6 +133,9 @@ assemblyExcludedJars in assembly := {
 }
 */
 
+// redis
+val redisReact = "net.debasishg" %% "redisreact" % "0.9"
+
 lazy val datasource = project.
   settings(
     name := "datasource",
@@ -149,7 +152,8 @@ lazy val datasource = project.
       sqljdbc,
       alpakkaMongoDB,
       alpakkaSolr,
-      alpakkaCsv
+      alpakkaCsv,
+      redisReact
     )
   ).dependsOn(
     common

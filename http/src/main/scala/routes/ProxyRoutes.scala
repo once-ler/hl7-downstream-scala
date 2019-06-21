@@ -132,7 +132,7 @@ trait ProxyRoutes {
     handleRejections(corsRejectionHandler) {
       cors() {
         extractRequest { request =>
-            path("search" / Remaining) { remaining =>
+            path("search/suggest" / Remaining) { remaining =>
               withExecutionContext(Routes.blockingDispatcher) {
 
                 post {
