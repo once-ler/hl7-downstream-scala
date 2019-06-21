@@ -2,6 +2,8 @@ package com.eztier.datasource.common.implicits
 
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
+import akka.util.Timeout
+import scala.concurrent.duration._
 
 object ExecutionContext {
   implicit val system = ActorSystem("datasource-actor-system")
