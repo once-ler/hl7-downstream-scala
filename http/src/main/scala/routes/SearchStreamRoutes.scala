@@ -83,7 +83,7 @@ trait SearchStreamRoutes {
       curl -XPOST -H 'Content-Type:application/json'  -d '{"name": "abc"}' localhost:9000/search
   */
   def streamingSearchRoute = {
-    path("search") {
+    path("search-test") {
       get {
         val sourceOfNumbers = Source(1 to 15)
         val sourceOfSearchMessages =

@@ -54,7 +54,7 @@ class TestRedisSpec extends FunSpec with ScalaFutures with Matchers {
 
       val r = Await.result(f, 5 seconds)
       */
-      
+
       client
         .zrangeByScoreWithScores(setname, snapShotTimes(3) - 1000, false, snapShotTimes(4), true, None)
         .futureValue should equal (List(

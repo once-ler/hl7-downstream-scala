@@ -108,6 +108,7 @@ trait ProxyRoutes {
     }
   }
 
+  // http://localhost:7895/search/interface_logging/select?q=*:*&rows=100&start=5
   val proxy =
     handleRejections(corsRejectionHandler) {
       cors() {
