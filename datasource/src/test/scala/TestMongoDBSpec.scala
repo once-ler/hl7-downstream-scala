@@ -57,6 +57,21 @@ class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
       CommandRunner.findOne[ResearchPatient](Some(q))
         .futureValue should equal (Some(researchPatient))
     }
+
+    it ("Can convert Mickey to raw HL7 string") {
+      val hl7Msg = researchPatient.toRawHl7
+
+      val rawStr = List(
+        "MSH|^~\\&|SENDING_APPLICATION|SENDING_FACILITY|RECEIVING_APPLICATION|RECEIVING_FACILITY|20190525134448||ADT^A08|03576920190525134448|P|2.3||||\r",
+        "PID|1||035769^^^||MOUSE^MICKEY^J||1928-11-18|M||W~B~I|123 Main St.^^Lake Buena Vista^FL^32830||(407)939-1289^^^^^^^^^theMainMouse@disney.com^|||||||||N~U|||||||||||||||||||\r"
+      ).mkString("")
+
+      hl7Msg should equal (rawStr)
+
+      hl7Msg should include ("PID")
+
+    }
+
   }
 
 }
