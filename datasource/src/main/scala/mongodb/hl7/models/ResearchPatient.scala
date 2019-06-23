@@ -38,7 +38,7 @@ object ResearchPatient {
           case 0 => a + "1|"
           case 2 => a + r.PatientIdentifierList + "|"
           case 4 => a + r.PatientName + "|"
-          case 6 => a + r.DateTimeofBirth + "|"
+          case 6 => a + r.DateTimeofBirth.replace("-", "") + "|"
           case 7 => a + r.AdministrativeSex + "|"
           case 9 => a + r.Race + "|"
           case 10 => a + r.PatientAddress + "|"

@@ -1,5 +1,11 @@
 package com.eztier.datasource.test
 
+import java.text.SimpleDateFormat
+
+import ca.uhn.hl7v2.DefaultHapiContext
+import ca.uhn.hl7v2.model.v231.segment.PID
+import ca.uhn.hl7v2.parser.CanonicalModelClassFactory
+import ca.uhn.hl7v2.validation.impl.NoValidation
 import com.eztier.datasource.mongodb.hl7.models.ResearchPatient
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
@@ -26,6 +32,11 @@ class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
     dateLocal = "2019-05-25 13:44:48.788",
     dateTimezoneOffset = -14400
   )
+
+  val hapiContext = new DefaultHapiContext()
+  hapiContext.setModelClassFactory(new CanonicalModelClassFactory("2.3.1"))
+  hapiContext.setValidationContext(new NoValidation)
+  val p = hapiContext.getPipeParser()
 
   describe ("MongoDB spec") {
 
@@ -63,13 +74,43 @@ class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
 
       val rawStr = List(
         "MSH|^~\\&|SENDING_APPLICATION|SENDING_FACILITY|RECEIVING_APPLICATION|RECEIVING_FACILITY|20190525134448||ADT^A08|03576920190525134448|P|2.3||||\r",
-        "PID|1||035769^^^||MOUSE^MICKEY^J||1928-11-18|M||W~B~I|123 Main St.^^Lake Buena Vista^FL^32830||(407)939-1289^^^^^^^^^theMainMouse@disney.com^|||||||||N~U|||||||||||||||||||\r"
+        "PID|1||035769^^^||MOUSE^MICKEY^J||19281118|M||W~B~I|123 Main St.^^Lake Buena Vista^FL^32830||(407)939-1289^^^^^^^^^theMainMouse@disney.com^|||||||||N~U|||||||||||||||||||\r"
       ).mkString("")
 
       hl7Msg should equal (rawStr)
 
       hl7Msg should include ("PID")
 
+    }
+
+    it("Should parse PID") {
+      val hl7Msg = researchPatient.toRawHl7
+
+      val hpiMsg = p.parse(hl7Msg)
+
+      val pid = hpiMsg.get("PID").asInstanceOf[PID]
+
+      val gender = pid.getSex.getValueOrEmpty
+
+      gender should be ("M")
+
+      val mrn = pid.getPatientIdentifierList.head.getID.toString
+
+      mrn should be ("035769")
+
+      val sdf = new SimpleDateFormat("yyyy-MM-dd")
+      val dob = pid.getDateTimeOfBirth.getTimeOfAnEvent.getValueAsDate
+      val dobStr = sdf.format(dob)
+
+      dobStr should be ("1928-11-18")
+
+      val ethnicity = pid.getEthnicGroup.map(_.getIdentifier.getValueOrEmpty).mkString("~")
+
+      ethnicity should be ("N~U")
+
+      val race = pid.getRace.map(_.getIdentifier.getValueOrEmpty).mkString("~")
+
+      race should be ("W~B~I")
     }
 
   }
