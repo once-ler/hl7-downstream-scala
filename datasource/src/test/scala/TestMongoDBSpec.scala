@@ -1,7 +1,9 @@
 package com.eztier.datasource.test
 
 import java.text.SimpleDateFormat
+import java.time.{ZoneId, ZonedDateTime}
 
+import akka.stream.scaladsl.Sink
 import ca.uhn.hl7v2.DefaultHapiContext
 import ca.uhn.hl7v2.model.v231.segment.PID
 import ca.uhn.hl7v2.parser.CanonicalModelClassFactory
@@ -11,8 +13,9 @@ import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import com.eztier.datasource.mongodb.hl7.runners.CommandRunner
 import org.mongodb.scala.bson.conversions
-import org.mongodb.scala.model.Filters
+import org.mongodb.scala.model.{Filters, Projections}
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
@@ -67,6 +70,53 @@ class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
 
       CommandRunner.findOne[ResearchPatient](Some(q))
         .futureValue should equal (Some(researchPatient))
+    }
+
+    it ("Should find one Mickey given a min and max date") {
+      val start = ZonedDateTime.of(2019, 5, 25, 13, 43, 23, 0, ZoneId.systemDefault())
+
+      val from = start.toInstant().toEpochMilli()
+      val to = start.plusMinutes(2).toInstant().toEpochMilli()
+
+      val o = CommandRunner.search[ResearchPatient](from, to)
+
+      o shouldBe defined
+
+      import com.eztier.datasource.common.implicits.ExecutionContext._
+
+      val f = o.get.runWith(Sink.seq)
+
+      val r = Await.result(f, 6 seconds)
+
+      r.size should equal (1)
+    }
+
+    it ("Should find one Mickey given a min and max date and a projection") {
+
+      val p: conversions.Bson = Projections.fields(Projections.include("mrn", "dateCreated"), Projections.excludeId())
+
+      val start = ZonedDateTime.of(2019, 5, 25, 13, 43, 23, 0, ZoneId.systemDefault())
+
+      val from = start.toInstant().toEpochMilli()
+      val to = start.plusMinutes(2).toInstant().toEpochMilli()
+
+      val o = CommandRunner.searchWithProjections[ResearchPatient](from, to, Some(p))
+
+      o shouldBe defined
+
+      import com.eztier.datasource.common.implicits.ExecutionContext._
+
+      val f = o.get.runWith(Sink.seq)
+
+      val r = Await.result(f, 6 seconds)
+
+      r.foreach{
+        a =>
+          val dateCreated = a.getLong("dateCreated")
+          val mrn = a.getString("mrn")
+      }
+
+      r.size should equal (1)
     }
 
     it ("Can convert Mickey to raw HL7 string") {

@@ -8,6 +8,7 @@ import org.mongodb.scala.model.Filters._
 import com.eztier.datasource.mongodb.hl7.models.{Hl7Message, ResearchPatient}
 import com.eztier.datasource.mongodb.hl7.implicits.Transactors.{xaHl7Message, xaResearchPatient}
 import com.eztier.datasource.common.implicits.ExecutionContext._
+import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson.conversions
 import org.mongodb.scala.model.Filters
 import org.mongodb.scala.result.UpdateResult
@@ -17,6 +18,7 @@ import scala.concurrent.duration._
 
 trait Searchable[A] {
   def search(from: Long, to: Long): Option[Source[A, NotUsed]]
+  def searchWithProjections(from: Long, to: Long, projection: Option[conversions.Bson] = None): Option[Source[Document, NotUsed]]
   def findOne(filter: Option[conversions.Bson] = None): Future[Option[A]]
 }
 
@@ -54,10 +56,37 @@ object Searchable {
         case _ => None
       }
     }
+    override def searchWithProjections(from: Long, to: Long, projection: Option[conversions.Bson]): Option[Source[Document, NotUsed]] = {
+      val s = xaHl7Message.find[Document](and(gte("dateCreated", from), lte("dateCreated", to)))
+      s.recover { case _ => None }
+
+      Some(MongoSource(s))
+    }
   }
 
   implicit object ResearchPatientSearch extends Searchable[ResearchPatient] {
-    override def search(from: Long, to: Long): Option[Source[ResearchPatient, NotUsed]] = ???
+    override def search(from: Long, to: Long): Option[Source[ResearchPatient, NotUsed]] = {
+      val q: conversions.Bson = Filters.and(Filters.gt("dateCreated", from), Filters.lte("dateCreated", to))
+
+      val f = xaResearchPatient.find(q)
+
+      f.recover { case _ => None }
+
+      Some(MongoSource(f))
+    }
+
+    // collection.find().projection(fields(include("mrn", "dateCreated"), excludeId()))
+    override def searchWithProjections(from: Long, to: Long, projection: Option[conversions.Bson] = None): Option[Source[Document, NotUsed]] = {
+      val q: conversions.Bson = Filters.and(Filters.gt("dateCreated", from), Filters.lte("dateCreated", to))
+
+      val f = xaResearchPatient.find[Document](q)
+
+      val f1 = if (projection != None) f.projection(projection.get) else f
+
+      f1.recover { case _ => None }
+
+      Some(MongoSource(f1))
+    }
 
     override def findOne(filter: Option[conversions.Bson] = None): Future[Option[ResearchPatient]] = {
       val f0 = if (filter == None)
