@@ -16,12 +16,6 @@ object Transactors {
 
   implicit val cs = IO.contextShift(ec)
 
-  /*
-  implicit lazy val xa = Transactor.fromDriverManager[IO](
-    driver, url, user, pass
-  )
-  */
-
   implicit val hikariTransactor: Resource[IO, HikariTransactor[IO]] =
     for {
       ce <- ExecutionContexts.fixedThreadPool[IO](poolSize) // connect EC
