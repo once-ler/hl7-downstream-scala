@@ -6,9 +6,9 @@ import org.scalatest.{BeforeAndAfter, Failed, FunSpec, Matchers}
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-
 import com.eztier.datasource.postgres.eventstore.models.VersionControl
 import com.eztier.datasource.common.runners.{CommandRunner => CommandRunnerCommon}
+import com.eztier.datasource.postgres.eventstore.implicits.Transactors
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 import com.eztier.hl7mock.types.CaPatient
 
@@ -44,6 +44,16 @@ class TestDoobieSpec extends FunSpec with Matchers {
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
+  implicit val cs = Transactors.cs
+
+  implicit val xa = Transactor.fromDriverManager[IO](
+    Transactors.driver,     // driver classname
+    Transactors.url,     // connect URL (driver-specific)
+    Transactors.user,                  // user
+    Transactors.pass,                          // password
+    ExecutionContexts.synchronous // just for testing
+  )
+
   it("Construct valid SQL statement") {
       
     val schema = "ril"
@@ -64,10 +74,10 @@ class TestDoobieSpec extends FunSpec with Matchers {
       response Response,
       error Error
       from """ ++ 
-      Fragment(schema, None) ++ fr".wsi_execution_hist where to_store = " ++ 
-      Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
-      Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
-      Fragment(s"'${toDateTime.toString()}'", None)
+      Fragment(schema, List()) ++ fr".wsi_execution_hist where to_store = " ++ 
+      Fragment(s"'$toStore'", List()) ++ fr" and start_time >= " ++
+      Fragment(s"'${fromDateTime.toString()}'", List()) ++ fr" and start_time <= " ++
+      Fragment(s"'${toDateTime.toString()}'", List())
 
       // Testing
       val y = xa.yolo
@@ -171,7 +181,7 @@ class TestDoobieSpec extends FunSpec with Matchers {
 
     val r = Await.result(g, 500 millis).headOption
 
-    r should not be (None)
+    r should not be (List())
   }
 
 /*
