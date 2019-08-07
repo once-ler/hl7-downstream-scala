@@ -63,7 +63,7 @@ object Searchable {
 
       // https://tpolecat.github.io/doobie/docs/17-FAQ.html#how-do-i-turn-an-arbitrary-sql-string-into-a-query0update0
       val stmt =
-        fr"""select * from """ ++ Fragment(schema, None) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", None) ++ fr""" limit 10"""
+        fr"""select * from """ ++ Fragment(schema, List()) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", List()) ++ fr""" limit 10"""
 
       // Testing
       val y = xa.yolo
@@ -87,7 +87,7 @@ object Searchable {
   implicit object CaPatientSearch extends Searchable[CaPatient] {
     override def search(term: String, schema: String = "hl7")(implicit xa: Transactor[IO]): IO[List[CaPatient]] = {
 
-      val stmt = fr"""select current from """ ++ Fragment(schema, None) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", None) ++ fr""" limit 10"""
+      val stmt = fr"""select current from """ ++ Fragment(schema, List()) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", List()) ++ fr""" limit 10"""
       stmt
         .query[CaPatient]
         .stream
@@ -113,10 +113,10 @@ object SearchableLog {
         else case when length(response) <= 195 then response else '... ' || substring(response from length(response) - 194 for 195) end 
         end Response 
         from """ ++ 
-        Fragment(schema, None) ++ fr".wsi_execution_hist where error = true and to_store = " ++ 
-        Fragment(s"'$toStore'", None) ++ fr" and start_time >= " ++
-        Fragment(s"'${fromDateTime.toString()}'", None) ++ fr" and start_time <= " ++
-        Fragment(s"'${toDateTime.toString()}'", None)
+        Fragment(schema, List()) ++ fr".wsi_execution_hist where error = true and to_store = " ++ 
+        Fragment(s"'$toStore'", List()) ++ fr" and start_time >= " ++
+        Fragment(s"'${fromDateTime.toString()}'", List()) ++ fr" and start_time <= " ++
+        Fragment(s"'${toDateTime.toString()}'", List())
       
       stmt
         .query[ExecutionLogMini]
@@ -132,7 +132,7 @@ object AdHocable {
   implicit object CaPatientAdhoc extends AdHocable[CaPatient] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[CaPatient]] = {
       
-      val stmt = Fragment(sqlstring, None)
+      val stmt = Fragment(sqlstring, List())
       stmt
         .query[CaPatient]
         .stream
@@ -146,7 +146,7 @@ object AdHocable {
   implicit object ExecutionLogAdhoc extends AdHocable[ExecutionLog] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionLog]] = {
       
-      val stmt = Fragment(sqlstring, None)
+      val stmt = Fragment(sqlstring, List())
       stmt
         .query[ExecutionLog]
         .stream
@@ -159,7 +159,7 @@ object AdHocable {
   implicit object ExecutionLogMiniAdhoc extends AdHocable[ExecutionLogMini] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionLogMini]] = {
       
-      val stmt = Fragment(sqlstring, None)
+      val stmt = Fragment(sqlstring, List())
       stmt
         .query[ExecutionLogMini]
         .stream
@@ -172,7 +172,7 @@ object AdHocable {
   implicit object ExecutionAggregationLogAdhoc extends AdHocable[ExecutionAggregationLog] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[ExecutionAggregationLog]] = {
 
-      val stmt = Fragment(sqlstring, None)
+      val stmt = Fragment(sqlstring, List())
       stmt
         .query[ExecutionAggregationLog]
         .stream
@@ -185,7 +185,7 @@ object AdHocable {
   implicit object VersionControlAdhoc extends AdHocable[VersionControl] {
     override def adhoc(sqlstring: String)(implicit xa: Transactor[IO]): IO[List[VersionControl]] = {
 
-      val stmt = Fragment(sqlstring, None)
+      val stmt = Fragment(sqlstring, List())
       stmt
         .query[VersionControl]
         .stream
@@ -207,14 +207,25 @@ object Eventable {
         // val types = eventTypes.map("'" + _ + "'").mkString(",")
         val bodies = eventBodies.map("''" + _ + "''").mkString(",")
 
-        val stmt = fr"select " ++ Fragment(schema, None) ++ fr".mt_append_event($streamUuid::uuid, $streamType, $eventUuids::uuid[], $eventTypes, $eventBodies::jsonb[]) result"
+        val stmt = fr"select " ++ Fragment(schema, List()) ++ fr".mt_append_event($streamUuid::uuid, $streamType, $eventUuids::uuid[], $eventTypes, $eventBodies::jsonb[]) result"
 
+        val x = Transactors.hikariTransactor.use{
+          xa =>
+            stmt
+              .query[AppendEventResult]
+              .stream
+              .compile
+              .to[List]
+              .transact(xa)
+        }
+        /*
         stmt
           .query[AppendEventResult]
           .stream
           .compile
           .to[List]
           .transact(xa)
+        */
       }
   }
   
@@ -294,11 +305,11 @@ object Creatable {
 
       val tblspc = if (useSchemaTablespace) schema else "pg_default"
       val pk = primaryKeys.mkString(",")
-      val stmt = fr"create table if not exists " ++ Fragment(s"$schema.$tname", None) ++ fr""" (
+      val stmt = fr"create table if not exists " ++ Fragment(s"$schema.$tname", List()) ++ fr""" (
         |model varchar(120),
         |subscriber varchar(120),
         |start_time timestamp with time zone,
-        |primary key (""".stripMargin ++ Fragment(pk, None) ++ fr") ) tablespace " ++ Fragment(tblspc, None)
+        |primary key (""".stripMargin ++ Fragment(pk, List()) ++ fr") ) tablespace " ++ Fragment(tblspc, List())
 
       stmt.update.run.transact(xa)
     }

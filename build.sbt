@@ -96,13 +96,13 @@ val akkaHttpCirce = "de.heikoseeberger" %% "akka-http-circe" % "1.22.0"
 val akkaHttpCors = "ch.megard" %% "akka-http-cors" % "0.3.0"
 
 // PostgreSQL
-val doobie = "org.tpolecat" %% "doobie-core"      % "0.6.0"
-val doobieH2 = "org.tpolecat" %% "doobie-h2"        % "0.6.0"          // H2 driver 1.4.197 + type mappings.
-val doobieHikari = "org.tpolecat" %% "doobie-hikari"    % "0.6.0"          // HikariCP transactor.
-val doobiePostgres = "org.tpolecat" %% "doobie-postgres"  % "0.6.0"          // Postgres driver 42.2.5 + type mappings.
-val doobiePostgresCirce = "org.tpolecat" %% "doobie-postgres-circe"  % "0.6.0"          // Postgres driver 42.2.5 + type mappings.
-val doobieSpecs2 = "org.tpolecat" %% "doobie-specs2"    % "0.6.0" % "test" // Specs2 support for typechecking statements.
-val doobieScalaTest = "org.tpolecat" %% "doobie-scalatest" % "0.6.0" % "test"  // ScalaTest support for typechecking statements.
+val doobie = "org.tpolecat" %% "doobie-core"      % "0.7.0"
+val doobieH2 = "org.tpolecat" %% "doobie-h2"        % "0.7.0"          // H2 driver 1.4.197 + type mappings.
+val doobieHikari = "org.tpolecat" %% "doobie-hikari"    % "0.7.0"          // HikariCP transactor.
+val doobiePostgres = "org.tpolecat" %% "doobie-postgres"  % "0.7.0"          // Postgres driver 42.2.5 + type mappings.
+val doobiePostgresCirce = "org.tpolecat" %% "doobie-postgres-circe"  % "0.7.0"          // Postgres driver 42.2.5 + type mappings.
+val doobieSpecs2 = "org.tpolecat" %% "doobie-specs2"    % "0.7.0" % "test" // Specs2 support for typechecking statements.
+val doobieScalaTest = "org.tpolecat" %% "doobie-scalatest" % "0.7.0" % "test"  // ScalaTest support for typechecking statements.
 
 // circe
 val circeGenericExtras = "io.circe" %% "circe-generic-extras" % "0.10.0"
@@ -145,6 +145,7 @@ lazy val datasource = project.
       doobiePostgres,
       doobiePostgresCirce,
       doobieScalaTest,
+      doobieHikari,
       circeGenericExtras,
       circeJava8,
       cassandraUdt,
