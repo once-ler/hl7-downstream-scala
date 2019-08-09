@@ -1,6 +1,7 @@
 package com.eztier.datasource.postgres.eventstore.implicits
 
 import java.sql.Connection
+import java.util.concurrent.ThreadPoolExecutor
 
 import doobie._
 import cats.effect.{IO, Resource}
@@ -14,7 +15,7 @@ object Transactors {
   val driver = conf.getString(s"$env.doobie.postgres.patient.driver")
   val user = conf.getString(s"$env.doobie.postgres.patient.user")
   val pass = conf.getString(s"$env.doobie.postgres.patient.password")
-  var poolSize = if (conf.hasPath(s"$env.doobie.postgres.patient.pool-size")) conf.getInt(s"$env.doobie.postgres.patient.pool-size") else 25
+  var poolSize = if (conf.hasPath(s"$env.doobie.postgres.patient.pool-size")) conf.getInt(s"$env.doobie.postgres.patient.pool-size") else 10
 
 
   implicit val cs = IO.contextShift(ec)
@@ -45,6 +46,7 @@ object Transactors {
 
   */
 
+  /*
   implicit val hikariTransactor: Resource[IO, HikariTransactor[IO]] = for {
     ce <- ExecutionContexts.fixedThreadPool[IO](poolSize) // connect EC
     te <- ExecutionContexts.cachedThreadPool[IO] // transaction EC
@@ -57,7 +59,7 @@ object Transactors {
       te
     )
   } yield xa
-
+  */
 
   val config = new HikariConfig()
   config.setDriverClassName(driver)
@@ -66,14 +68,22 @@ object Transactors {
   config.setPassword(pass)
   config.setMaximumPoolSize(poolSize)
 
+  /*
   val xa1: IO[HikariTransactor[IO]] =
     IO.pure(HikariTransactor.apply[IO](new HikariDataSource(config), ec, ec))
+  */
 
-  val ds = new HikariDataSource(config)
+  private val ds = new HikariDataSource(config)
 
-  val xa: Transactor[IO] = Transactor.fromDataSource[IO](ds, ec, ec)
+  import java.util.concurrent.{ Executors, ExecutorService }
+  import scala.concurrent.ExecutionContext
 
-  val xa2: Transactor[IO] = Transactor.fromConnection[IO](ds.getConnection, ec)
+  private val fixedPool: ExecutorService = Executors.newFixedThreadPool(poolSize)
+  private val ce = ExecutionContext.fromExecutorService(fixedPool)
+  private val cachedPool = Executors.newCachedThreadPool()
+  private val te = ExecutionContext.fromExecutorService(cachedPool)
+
+  implicit lazy val xa: Transactor[IO] = Transactor.fromDataSource[IO](ds, ce, te)
 
 
 }

@@ -11,6 +11,7 @@ import com.eztier.datasource.common.runners.{CommandRunner => CommandRunnerCommo
 import com.eztier.datasource.postgres.eventstore.implicits.Transactors
 import com.eztier.datasource.postgres.eventstore.runners.CommandRunner
 import com.eztier.hl7mock.types.CaPatient
+import org.scalatest.concurrent.ScalaFutures
 
 // Required for implicitly converting java.sql.Timestamp -> java.time.LocalDateTime
 import com.eztier.datasource.common.models._
@@ -39,7 +40,7 @@ import scala.concurrent.duration._
 // testOnly *TestDoobieSpec
 // to run only the tests whose name includes the substring "foo". -z foo
 // Exact match -t foo i.e.  testOnly *TestDoobieSpec -- -t foo
-class TestDoobieSpec extends FunSpec with Matchers {
+class TestDoobieSpec extends FunSpec with Matchers with ScalaFutures {
   implicit val system = ActorSystem("Sys")
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
@@ -184,25 +185,19 @@ class TestDoobieSpec extends FunSpec with Matchers {
     r should not be (List())
   }
 
-  it("Should only create one pool") {
+  it("Can run in parallel of 10 tasks sharing a thread pool of 5 threads and should only create one pool with HikariCP") {
 
-    List("a", "b").foreach {
+    List("1", "2", "3", "4", "5", "6", "7", "8", "9", "10").par.foreach {
       a =>
-        val g = CommandRunner.adhoc[VersionControl](s"""select 'ABC' model, 'DEF' subscriber, now() startTime from hl7.version_control limit 1""")
+        val g = CommandRunner.adhoc[VersionControl](s"""select '$a' model, 'DEF' subscriber, now() startTime from hl7.version_control limit 1""")
           .runWith(Sink.seq)
 
-        val r = Await.result(g, 500 millis).headOption
+        whenReady(g) {
+          println(s">>>>>>>>>>>>>>>>>>>>>>>>>>>>> $a")
 
-        // r should not be (List())
-
-        r.get.model should be ("ABC")
-
-        println(s">>>>>>>>>>>>>>>>>>>>>>>>>>>>> $a")
+          _.headOption.get.model should be (a)
+        }
     }
-
-    println("Done")
-
-
   }
 
 /*
