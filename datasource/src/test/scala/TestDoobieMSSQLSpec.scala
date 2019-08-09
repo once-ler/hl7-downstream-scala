@@ -29,16 +29,6 @@ class TestDoobieMSSQLSpec extends FunSpec with Matchers {
     implicit val ec = system.dispatcher
     implicit val materializer = ActorMaterializer()
 
-    implicit val cs = Transactors.cs
-
-    implicit val xa = Transactor.fromDriverManager[IO](
-      Transactors.driver,     // driver classname
-      Transactors.url,     // connect URL (driver-specific)
-      Transactors.user,                  // user
-      Transactors.pass,                          // password
-      ExecutionContexts.synchronous // just for testing
-    )
-
     val schema = "ril"
     val toStore = "store_def"
     // val fromDateTime: DateTime = new DateTime("2019-01-31T12:43:03.141Z")

@@ -45,16 +45,6 @@ class TestDoobieSpec extends FunSpec with Matchers with ScalaFutures {
   implicit val ec = system.dispatcher
   implicit val materializer = ActorMaterializer()
 
-  implicit val cs = Transactors.cs
-
-  implicit val xa = Transactor.fromDriverManager[IO](
-    Transactors.driver,     // driver classname
-    Transactors.url,     // connect URL (driver-specific)
-    Transactors.user,                  // user
-    Transactors.pass,                          // password
-    ExecutionContexts.synchronous // just for testing
-  )
-
   it("Construct valid SQL statement") {
       
     val schema = "ril"
