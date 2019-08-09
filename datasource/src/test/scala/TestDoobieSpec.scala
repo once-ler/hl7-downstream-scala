@@ -184,6 +184,27 @@ class TestDoobieSpec extends FunSpec with Matchers {
     r should not be (List())
   }
 
+  it("Should only create one pool") {
+
+    List("a", "b").foreach {
+      a =>
+        val g = CommandRunner.adhoc[VersionControl](s"""select 'ABC' model, 'DEF' subscriber, now() startTime from hl7.version_control limit 1""")
+          .runWith(Sink.seq)
+
+        val r = Await.result(g, 500 millis).headOption
+
+        // r should not be (List())
+
+        r.get.model should be ("ABC")
+
+        println(s">>>>>>>>>>>>>>>>>>>>>>>>>>>>> $a")
+    }
+
+    println("Done")
+
+
+  }
+
 /*
   // Adhocable[ExecutionLog]
   val g = CommandRunner.adhoc[ExecutionLog](s"""select 

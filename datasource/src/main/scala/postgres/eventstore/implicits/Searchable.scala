@@ -22,20 +22,20 @@ import com.eztier.datasource.common.models._
 import com.eztier.datasource.common.models.ExecutionLogImplicits._
 
 trait Searchable[A] {
-  def search(term: String, schema: String = "hl7")(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[A]]
+  def search(term: String, schema: String = "hl7"): IO[List[A]]
 }
 
 trait SearchableLog[A] {
-  def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[A]]
+  def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril"): IO[List[A]]
 }
 
 trait AdHocable[A] {
-  def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[A]]
+  def adhoc(sqlstring: String): IO[List[A]]
 }
 
 trait Eventable[A] {
   def event(streamUuid: String, streamType: String, eventUuids: List[String], eventTypes: List[String], eventBodies: List[String], schema: String = "hl7")
-    (implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[AppendEventResult]]
+    : IO[List[AppendEventResult]]
 }
 
 trait Updatable[A] {
@@ -59,7 +59,7 @@ trait Creatable[A] {
 object Searchable {
 
   implicit object PatientSearch extends Searchable[Patient] {
-    override def search(term: String, schema: String = "hl7")(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[Patient]] = {
+    override def search(term: String, schema: String = "hl7"): IO[List[Patient]] = {
 
       // https://tpolecat.github.io/doobie/docs/17-FAQ.html#how-do-i-turn-an-arbitrary-sql-string-into-a-query0update0
       val stmt =
@@ -84,8 +84,9 @@ object Searchable {
         .unsafeRunSync
       // Fin Testing
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
+
           stmt
             .query[Patient]
             .stream
@@ -97,11 +98,11 @@ object Searchable {
   }
 
   implicit object CaPatientSearch extends Searchable[CaPatient] {
-    override def search(term: String, schema: String = "hl7")(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[CaPatient]] = {
+    override def search(term: String, schema: String = "hl7"): IO[List[CaPatient]] = {
 
       val stmt = fr"""select current from """ ++ Fragment(schema, List()) ++ fr""".patient where name ~* """ ++ Fragment(s"'$term'", List()) ++ fr""" limit 10"""
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[CaPatient]
@@ -117,7 +118,7 @@ object Searchable {
 
 object SearchableLog {
   implicit object ExecutionLogMiniSearch extends SearchableLog[ExecutionLogMini] {
-    override def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril")(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[ExecutionLogMini]] = {
+    override def search(toStore: String, fromDateTime: LocalDateTime, toDateTime: LocalDateTime, schema: String = "ril"): IO[List[ExecutionLogMini]] = {
       
       val stmt = fr"""select start_time StartTime, 
         from_store FromStore, 
@@ -134,7 +135,7 @@ object SearchableLog {
         Fragment(s"'${fromDateTime.toString()}'", List()) ++ fr" and start_time <= " ++
         Fragment(s"'${toDateTime.toString()}'", List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[ExecutionLogMini]
@@ -149,11 +150,11 @@ object SearchableLog {
 
 object AdHocable {
   implicit object CaPatientAdhoc extends AdHocable[CaPatient] {
-    override def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[CaPatient]] = {
+    override def adhoc(sqlstring: String): IO[List[CaPatient]] = {
       
       val stmt = Fragment(sqlstring, List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[CaPatient]
@@ -166,11 +167,11 @@ object AdHocable {
   }
 
   implicit object ExecutionLogAdhoc extends AdHocable[ExecutionLog] {
-    override def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[ExecutionLog]] = {
+    override def adhoc(sqlstring: String): IO[List[ExecutionLog]] = {
       
       val stmt = Fragment(sqlstring, List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[ExecutionLog]
@@ -183,11 +184,11 @@ object AdHocable {
   }
 
   implicit object ExecutionLogMiniAdhoc extends AdHocable[ExecutionLogMini] {
-    override def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[ExecutionLogMini]] = {
+    override def adhoc(sqlstring: String): IO[List[ExecutionLogMini]] = {
       
       val stmt = Fragment(sqlstring, List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
 
           stmt
@@ -201,11 +202,11 @@ object AdHocable {
   }
 
   implicit object ExecutionAggregationLogAdhoc extends AdHocable[ExecutionAggregationLog] {
-    override def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[ExecutionAggregationLog]] = {
+    override def adhoc(sqlstring: String): IO[List[ExecutionAggregationLog]] = {
 
       val stmt = Fragment(sqlstring, List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[ExecutionAggregationLog]
@@ -218,19 +219,19 @@ object AdHocable {
   }
 
   implicit object VersionControlAdhoc extends AdHocable[VersionControl] {
-    override def adhoc(sqlstring: String)(implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[VersionControl]] = {
+    override def adhoc(sqlstring: String): IO[List[VersionControl]] = {
 
       val stmt = Fragment(sqlstring, List())
 
-      hikariTransactor.use {
-        xa =>
+      //Transactors.hikariTransactor.use {
+        //xa =>
           stmt
             .query[VersionControl]
             .stream
             .compile
             .to[List]
-            .transact(xa)
-      }
+            .transact(Transactors.xa)
+      //}
     }
   }
 
@@ -240,14 +241,14 @@ object Eventable {
 
   implicit object GenericEventEvent extends Eventable[GenericEvent] {
     override def event(streamUuid: String, streamType: String, eventUuids: List[String], eventTypes: List[String], eventBodies: List[String], schema: String = "hl7")
-    (implicit hikariTransactor: Resource[IO, HikariTransactor[IO]]): IO[List[AppendEventResult]] = {
-      // val uuids = eventUuids.map("''" + _ + "''").mkString(",")
-      // val types = eventTypes.map("'" + _ + "'").mkString(",")
-      // val bodies = eventBodies.map("''" + _ + "''").mkString(",")
+    : IO[List[AppendEventResult]] = {
+      // val uuids = eventUuids.use("''" + _ + "''").mkString(",")
+      // val types = eventTypes.use("'" + _ + "'").mkString(",")
+      // val bodies = eventBodies.use("''" + _ + "''").mkString(",")
 
       val stmt = fr"select " ++ Fragment(schema, List()) ++ fr".mt_append_event($streamUuid::uuid, $streamType, $eventUuids::uuid[], $eventTypes, $eventBodies::jsonb[]) result"
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           stmt
             .query[AppendEventResult]
@@ -274,7 +275,7 @@ object Updatable {
       val stmt = s"""insert into $schema.$tname (model, subscriber, start_time) values (?, ?, ?)
       on conflict(model, subscriber) do update set start_time = EXCLUDED.start_time"""
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           Update[VersionControlRow](stmt)
             .toUpdate0(row)
@@ -298,7 +299,7 @@ object Updatable {
         on conflict(start_time, from_store, to_store, study_id, wsi, caller)
         do update set request = EXCLUDED.request, response = EXCLUDED.response, error = EXCLUDED.error"""
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           Update[ExecutionLogRow](stmt)
             .toUpdate0(row)
@@ -324,7 +325,7 @@ object UpdateManyable {
         on conflict(start_time, from_store, to_store, study_id, wsi, caller)
         do update set request = EXCLUDED.request, response = EXCLUDED.response, error = EXCLUDED.error"""
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa =>
           Update[ExecutionLog](stmt)
             .updateMany(a)
@@ -349,7 +350,7 @@ object Creatable {
         |start_time timestamp with time zone,
         |primary key (""".stripMargin ++ Fragment(pk, List()) ++ fr") ) tablespace " ++ Fragment(tblspc, List())
 
-      hikariTransactor.use {
+      Transactors.hikariTransactor.use {
         xa => stmt.update.run.transact(xa)
       }
 
