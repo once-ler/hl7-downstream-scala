@@ -27,7 +27,7 @@ lazy val global = project
   )
   
 lazy val commonSettings = Seq(
-  version := "0.1.52",
+  version := "0.1.53",
   organization := "com.eztier",
   scalaVersion := "2.12.4",
   scalacOptions ++= compilerOptions,
@@ -121,6 +121,9 @@ val alpakkaSolr = "com.lightbend.akka" %% "akka-stream-alpakka-solr" % "1.0-M3"
 // csv
 val alpakkaCsv = "com.lightbend.akka" %% "akka-stream-alpakka-csv" % "1.0.2"
 
+// Exchange
+val exchangeWebService = "com.microsoft.ews-java-api" % "ews-java-api" % "2.0"
+
 /*
 // Oracle
 sbt> show unmanagedBase
@@ -154,7 +157,8 @@ lazy val datasource = project.
       alpakkaMongoDB,
       alpakkaSolr,
       alpakkaCsv,
-      redisReact
+      redisReact,
+      exchangeWebService
     )
   ).dependsOn(
     common
