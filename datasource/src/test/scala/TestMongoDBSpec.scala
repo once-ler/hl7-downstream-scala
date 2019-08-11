@@ -8,10 +8,11 @@ import ca.uhn.hl7v2.DefaultHapiContext
 import ca.uhn.hl7v2.model.v231.segment.PID
 import ca.uhn.hl7v2.parser.CanonicalModelClassFactory
 import ca.uhn.hl7v2.validation.impl.NoValidation
-import com.eztier.datasource.mongodb.hl7.models.ResearchPatient
+import com.eztier.datasource.mongodb.hl7.models.{CaPatientMongo, ResearchPatient}
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import com.eztier.datasource.mongodb.hl7.runners.CommandRunner
+import com.eztier.hl7mock.types.CaPatient
 import org.mongodb.scala.bson.conversions
 import org.mongodb.scala.model.{Filters, Projections}
 
@@ -59,17 +60,36 @@ class TestMongoDBSpec extends FunSpec with ScalaFutures with Matchers {
       whenReady(f, timeout(2 seconds), interval(500 millis)) {
         a =>
           a match {
-          case Some(b) => b.getMatchedCount should be (1)
-          case _ => None
-        }
+            case Some(b) => b.getMatchedCount should be (1)
+            case _ => None
+          }
       }
     }
 
-    it ("Should find one Mickey") {
+    it ("Should find one Mickey as ResearchPatient") {
       val q: conversions.Bson = Filters.eq("_id", "035769")
 
       CommandRunner.findOne[ResearchPatient](Some(q))
         .futureValue should equal (Some(researchPatient))
+    }
+
+    it ("Should find one Mickey as CaPatient") {
+      val q: conversions.Bson = Filters.eq("_id", "135769")
+
+      CommandRunner.findOne[CaPatientMongo](Some(q))
+        .futureValue shouldBe defined // should equal (Some(researchPatient))
+    }
+
+    it("Can be implicitly converted to CaPatient") {
+      val q: conversions.Bson = Filters.eq("_id", "135769")
+
+      val f = CommandRunner.findOne[CaPatientMongo](Some(q))
+      whenReady(f) {
+        a =>
+          val b: CaPatient = a.get
+
+          b.getClass.getSimpleName should be ("CaPatient")
+      }
     }
 
     it ("Should find one Mickey given a min and max date") {

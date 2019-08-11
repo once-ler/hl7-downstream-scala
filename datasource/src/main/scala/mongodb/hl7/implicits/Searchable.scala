@@ -5,8 +5,8 @@ import akka.stream.alpakka.mongodb.scaladsl.MongoSource
 import akka.stream.scaladsl.Source
 import org.mongodb.scala.{Completed, MongoCollection, model}
 import org.mongodb.scala.model.Filters._
-import com.eztier.datasource.mongodb.hl7.models.{Hl7Message, ResearchPatient}
-import com.eztier.datasource.mongodb.hl7.implicits.Transactors.{xaHl7Message, xaResearchPatient}
+import com.eztier.datasource.mongodb.hl7.models.{CaPatientMongo, Hl7Message, ResearchPatient}
+import com.eztier.datasource.mongodb.hl7.implicits.Transactors.{xaCaPatientMongo, xaHl7Message, xaResearchPatient}
 import com.eztier.datasource.common.implicits.ExecutionContext._
 import org.mongodb.scala.bson.collection.immutable.Document
 import org.mongodb.scala.bson.conversions
@@ -93,6 +93,43 @@ object Searchable {
         xaResearchPatient.find()
       else
         xaResearchPatient.find(filter.get)
+
+      val f1 = f0.limit(1).first().headOption()
+      f1.recover { case _ => None }
+
+      f1
+    }
+  }
+
+  implicit object CaPatientMongoSearch extends Searchable[CaPatientMongo] {
+    override def search(from: Long, to: Long): Option[Source[CaPatientMongo, NotUsed]] = {
+      val q: conversions.Bson = Filters.and(Filters.gt("dateCreated", from), Filters.lte("dateCreated", to))
+
+      val f = xaCaPatientMongo.find(q)
+
+      f.recover { case _ => None }
+
+      Some(MongoSource(f))
+    }
+
+    // collection.find().projection(fields(include("mrn", "dateCreated"), excludeId()))
+    override def searchWithProjections(from: Long, to: Long, projection: Option[conversions.Bson] = None): Option[Source[Document, NotUsed]] = {
+      val q: conversions.Bson = Filters.and(Filters.gt("dateCreated", from), Filters.lte("dateCreated", to))
+
+      val f = xaCaPatientMongo.find[Document](q)
+
+      val f1 = if (projection != None) f.projection(projection.get) else f
+
+      f1.recover { case _ => None }
+
+      Some(MongoSource(f1))
+    }
+
+    override def findOne(filter: Option[conversions.Bson] = None): Future[Option[CaPatientMongo]] = {
+      val f0 = if (filter == None)
+        xaCaPatientMongo.find()
+      else
+        xaCaPatientMongo.find(filter.get)
 
       val f1 = f0.limit(1).first().headOption()
       f1.recover { case _ => None }
